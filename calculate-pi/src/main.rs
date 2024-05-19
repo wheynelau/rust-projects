@@ -6,20 +6,36 @@ fn main() {
     let mut rng = rand::thread_rng();
     let mut inside_circle = 0;
 
-    let iterations: Result<i32, _> = env::var("ITER")
-        .map_err(|e| e.to_string())  // Convert the error to a string if there is an error
-        .and_then(|v| v.parse::<i32>().map_err(|e| e.to_string()));  // Convert the parse error to a string if there is an error
+    /* Honestly this was copied, still trying to understand it. From how i see it,
+    it tries to get the value from the ITER environment variable, then tries to parse it as an integer
 
-    let iterations = match iterations.clone() {
-        Ok(num) => {
-            println!("ITER is: {}", num);
-            num
-        }
-        Err(e) => {
-            println!("Error retrieving ITER as integer: {}", e);
-            return;
-        }
+    Maybe similar to try except in python
+
+        os.environ['ITER'], although would be nice if there's something like getenv
+     */
+    // Attempt to get the environment variable
+    let iter_var_result = env::var("ITER");
+
+    // Handle the case where the environment variable is not found or cannot be parsed as i32
+    let iterations = match iter_var_result {
+        Ok(iter_str) => match iter_str.parse::<i32>() {
+            Ok(iterations) => {
+                println!("ITER is: {}", iterations);
+                iterations
+            },
+            Err(parse_error) => {
+                println!("Error parsing ITER as i32: {}", parse_error);
+                100000 // Return a default value
+            },
+        },
+        Err(_) => {
+            println!("Environment variable ITER not found.");
+            100000 // Return a default value
+        },
     };
+
+    // Use iterations here
+    println!("Final value of iterations: {}", iterations);
 
     let start = std::time::Instant::now();
     for _ in 0..iterations {
