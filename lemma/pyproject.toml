@@ -3,6 +3,9 @@ requires = ["maturin>=1.5,<2.0"]
 build-backend = "maturin"
 
 [project]
+authors = [
+  {name = "Wayne Lau"},
+]
 name = "lemma"
 requires-python = ">=3.8"
 classifiers = [
@@ -11,5 +14,10 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dynamic = ["version"]
+description = "A rust port of lemmatization from wish"
+dependencies = [
+    "pandas",
+    "nltk",
+]
 [tool.maturin]
 features = ["pyo3/extension-module"]

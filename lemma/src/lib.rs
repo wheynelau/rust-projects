@@ -1,7 +1,17 @@
+//! # Lemma
+//! 
+//! `lemma` is a Python library for lemmatizing text using Rust.
+//! 
+//! ## Installation
+//! 
+//! ```bash
+//! # Currently the library is not on PyPI
+//! pip install -e .
+//! ```
+
 use pyo3::prelude::*;
 use rayon::prelude::*;
-use std::collections::{BTreeSet, BTreeMap};
-
+use std::{collections::{BTreeMap, BTreeSet}, sync::Arc};
 mod utils;
 
 #[pyclass]
@@ -9,32 +19,81 @@ struct Lemma {
     stopwords: BTreeSet<String>,
     lemmas: BTreeMap<String, String>,
 }
-/// Formats the sum of two numbers as string.
 #[pymethods]
 impl Lemma {
+    /// Creates a new instance of `Lemma`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```python
+    /// 
+    /// from lemma import Lemma
+    ///     
+    /// lemma = Lemma()
+    /// 
+    /// ```
     #[new]
     fn new() -> Self {
+
         let stopwords = utils::load_stopwords();
         let lemmas = utils::load_lemmas();
         Lemma { stopwords, lemmas }
     }
-
-    fn __call__(&self, input: &str) -> PyResult<Vec<String>> {
+    /// Returns the lemma of the input string.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `input` - A string slice that holds the input string.
+    /// 
+    /// # Examples
+    /// 
+    /// ```python
+    /// 
+    /// from lemma import Lemma
+    /// 
+    /// lemma = Lemma()
+    /// 
+    /// print(lemma("I am going to the market"))
+    /// 
+    /// ```
+    fn __call__(&self, input: &str) -> PyResult<String> {
         let words = utils::handle_input_str(input, &self.stopwords);
-        let results: Vec<_> = words.iter()
-        .filter_map(|word| self.lemmas.get(word.as_str()))
-        .cloned()
-        .collect();
-        Ok(results)
+        let results: Vec<String> = words.iter()
+            .map(|word| self.lemmas.get(word.as_str())
+            .map_or_else(|| word.to_string(), |lemma| lemma.to_string()))
+            .collect();
+        Ok(results.join(" "))
     }
-    fn multi(&self, input: Vec<String>) -> PyResult<Vec<Vec<String>>> {
+    /// Returns the lemma of the input string with multiple thread
+    /// 
+    /// # Arguments
+    /// 
+    /// * `input` - A list of string slices that holds the input strings.
+    /// 
+    /// # Examples
+    /// 
+    /// ```python
+    /// 
+    /// from lemma import Lemma
+    /// 
+    /// lemma = Lemma()
+    /// 
+    /// print(lemma.multi(["LONG TEXT 1", "LONG TEXT 2"]))
+    /// 
+    /// ```
+    fn multi(&self, input: Vec<String>) -> PyResult<Vec<String>> {
+        let lemmas = Arc::new(&self.lemmas);
+        let stopwords = Arc::new(&self.stopwords);
         let results: Vec<_> = input.par_iter()
            .map(|input_str| {
-                let words = utils::handle_input_str(input_str, &self.stopwords);
+                let words = utils::handle_input_str(input_str, &stopwords);
                 words.iter()
-                   .filter_map(|word| self.lemmas.get(word.as_str())) // Convert &std::string::String to &str
-                   .cloned()
-                   .collect::<Vec<String>>()
+                    .filter_map(|word| {
+                        lemmas.get(word.as_str())
+                            .map_or(Some(word.as_str()), |lemma| Some(lemma.as_str()))
+                    })
+                    .collect::<Vec<&str>>()
+                    .join(" ")
             })
            .collect();
     
@@ -42,7 +101,6 @@ impl Lemma {
     }
 }
 
-/// A Python module implemented in Rust.
 #[pymodule]
 fn lemma(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Lemma>()?;
