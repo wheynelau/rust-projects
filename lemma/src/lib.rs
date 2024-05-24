@@ -1,6 +1,7 @@
 use pyo3::prelude::*;
-
+use rayon::prelude::*;
 use std::collections::{BTreeSet, BTreeMap};
+
 mod utils;
 
 #[pyclass]
@@ -20,12 +21,23 @@ impl Lemma {
 
     fn __call__(&self, input: &str) -> PyResult<Vec<String>> {
         let words = utils::handle_input_str(input, &self.stopwords);
-        let mut results = Vec::new();
-        for word in words {
-            if let Some(lemma) = self.lemmas.get(&word) {
-                results.push(lemma.clone());
-            }
-        }
+        let results: Vec<_> = words.iter()
+        .filter_map(|word| self.lemmas.get(word.as_str()))
+        .cloned()
+        .collect();
+        Ok(results)
+    }
+    fn multi(&self, input: Vec<String>) -> PyResult<Vec<Vec<String>>> {
+        let results: Vec<_> = input.par_iter()
+           .map(|input_str| {
+                let words = utils::handle_input_str(input_str, &self.stopwords);
+                words.iter()
+                   .filter_map(|word| self.lemmas.get(word.as_str())) // Convert &std::string::String to &str
+                   .cloned()
+                   .collect::<Vec<String>>()
+            })
+           .collect();
+    
         Ok(results)
     }
 }

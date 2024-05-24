@@ -11,7 +11,6 @@ pub fn handle_input_str(input:&str, stopwords:&BTreeSet<String>) -> Vec<String> 
         .map(|mat| mat.as_str().to_string())
         .filter(|word| !stopwords.contains(word.as_str()))
         .collect();
-    println!("{:?}", words);
     words
 }
 
