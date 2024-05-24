@@ -76,19 +76,6 @@ pub fn load_lemmas() -> Lemmatizer {
     }
     lemmas
 }
-fn main() {
-    let stopwords: BTreeSet<String> = load_stopwords();
-    let lemmas: BTreeMap<String, String> = load_lemmas();
-    let input: &str = "I am a student";
-
-    let words: Vec<String> = handle_input_str(input, &stopwords);
-
-    for word in words {
-        if let Some(lemmas) = lemmas.get(&word) {
-                println!("{:?}", lemmas);
-            }
-        }
-    }
 
 #[cfg(test)]
 mod tests {
