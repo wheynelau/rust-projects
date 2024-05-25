@@ -38,11 +38,8 @@ _Note_: Editable mode might not be needed
 
 ## How to run
 
-The demonstration is in `benchmark.py`. 
-Please note that the lemmatization is not working the same as the python version. And further investigation is needed.  
-The csv file is from the [kaggle dataset](https://www.kaggle.com/datasets/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews).
-
-## Benchmark results
+The demonstration is in `benchmark.py`.  
+The csv and only data.noun is provided in the repo just for testing.
 
 - On a M1 Macbook Air.
 - polars should be faster than pandas
@@ -62,3 +59,31 @@ Rust list took 22.032 seconds
 - The code is not idiomatic or "correct" rust code, as I am still learning
 - Due to all the above, the code is not published anywhere, but it might be a good learning tool for someone
   
+
+
+@InProceedings{maas-EtAl:2011:ACL-HLT2011,
+  author    = {Maas, Andrew L.  and  Daly, Raymond E.  and  Pham, Peter T.  and  Huang, Dan  and  Ng, Andrew Y.  and  Potts, Christopher},
+  title     = {Learning Word Vectors for Sentiment Analysis},
+  booktitle = {Proceedings of the 49th Annual Meeting of the Association for Computational Linguistics: Human Language Technologies},
+  month     = {June},
+  year      = {2011},
+  address   = {Portland, Oregon, USA},
+  publisher = {Association for Computational Linguistics},
+  pages     = {142--150},
+  url       = {http://www.aclweb.org/anthology/P11-1015}
+}
+
+## References
+```
+@InProceedings{maas-EtAl:2011:ACL-HLT2011,
+  author    = {Maas, Andrew L.  and  Daly, Raymond E.  and  Pham, Peter T.  and  Huang, Dan  and  Ng, Andrew Y.  and  Potts, Christopher},
+  title     = {Learning Word Vectors for Sentiment Analysis},
+  booktitle = {Proceedings of the 49th Annual Meeting of the Association for Computational Linguistics: Human Language Technologies},
+  month     = {June},
+  year      = {2011},
+  address   = {Portland, Oregon, USA},
+  publisher = {Association for Computational Linguistics},
+  pages     = {142--150},
+  url       = {http://www.aclweb.org/anthology/P11-1015}
+}
+```
