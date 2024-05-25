@@ -23,7 +23,7 @@ fn download_file(url: &str, file_path: &str) -> Result<(), Box<dyn std::error::E
 
 pub fn load_stopwords() -> BTreeSet<String> {
 
-    let stopwords_path = "stopwords.txt";
+    let stopwords_path = "data/stopwords.txt";
     let stopwords_url = "https://gist.githubusercontent.com/sebleier/554280/raw/7e0e4a1ce04c2bb7bd41089c9821dbcf6d0c786c/NLTK's%2520list%2520of%2520english%2520stopwords";
 
     if !Path::new(stopwords_path).exists() {
