@@ -75,3 +75,4 @@ WNdb/*
 !WNdb/data.noun
 
 /target
+nltk_data
