@@ -1,6 +1,7 @@
 from random import random
 import time
 import os
+
 inside = 0
 iters = int(os.environ["ITER"])
 

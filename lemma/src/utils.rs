@@ -1,13 +1,19 @@
-use std::{collections::{BTreeMap,BTreeSet}, fs::File, io::{BufRead, Write}, path::Path};
 use regex::Regex;
 use reqwest::blocking::get;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs::File,
+    io::{BufRead, Write},
+    path::Path,
+};
 
 type Lemmatizer = BTreeMap<String, String>;
 
-pub fn handle_input_str(input:&str, stopwords:&BTreeSet<String>) -> Vec<String> {
+pub fn handle_input_str(input: &str, stopwords: &BTreeSet<String>) -> Vec<String> {
     let input = input.to_lowercase();
     let word_regex: Regex = Regex::new(r"\b\w+('|-\w+)?\b").expect("Invalid regex");
-    let words: Vec<String> = word_regex.find_iter(&input)
+    let words: Vec<String> = word_regex
+        .find_iter(&input)
         .map(|mat| mat.as_str().to_string())
         .filter(|word| !stopwords.contains(word.as_str()))
         .collect();
@@ -22,7 +28,6 @@ fn download_file(url: &str, file_path: &str) -> Result<(), Box<dyn std::error::E
 }
 
 pub fn load_stopwords() -> BTreeSet<String> {
-
     let stopwords_path = "data/stopwords.txt";
     let stopwords_url = "https://gist.githubusercontent.com/sebleier/554280/raw/7e0e4a1ce04c2bb7bd41089c9821dbcf6d0c786c/NLTK's%2520list%2520of%2520english%2520stopwords";
 
@@ -38,17 +43,16 @@ pub fn load_stopwords() -> BTreeSet<String> {
     stopwords
 }
 
-fn parse_line(line: &str) -> Option<BTreeMap<String,String>>{
-
+fn parse_line(line: &str) -> Option<BTreeMap<String, String>> {
     if line.starts_with(' ') {
-        return None
+        return None;
     }
     let parts: Vec<&str> = line.split(' ').collect();
     let base_form = parts[4].to_string().to_lowercase(); // Assuming the first word listed is the base form
 
     let mut lemmas: BTreeMap<String, String> = BTreeMap::new();
     if let Some(at_pos) = parts.iter().position(|&x| x == "@") {
-        for &word_info in &parts[4..at_pos-1] {
+        for &word_info in &parts[4..at_pos - 1] {
             match word_info {
                 "0" => continue, // Skip if the element is "0"
                 word => {
@@ -65,10 +69,8 @@ pub fn load_lemmas() -> Lemmatizer {
     let file = File::open("WNdb/data.noun").expect("File not found");
 
     let mut lemmas: Lemmatizer = BTreeMap::<String, String>::new();
-    
-    for line in std::io::BufReader::new(file)
-                        .lines()
-                        .map_while(Result::ok) {
+
+    for line in std::io::BufReader::new(file).lines().map_while(Result::ok) {
         if let Some(parsed_lemmas) = parse_line(&line) {
             lemmas.extend(parsed_lemmas);
         }

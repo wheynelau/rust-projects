@@ -65,7 +65,7 @@ fn main() {
 
     // Random starting position
     let mut x = rand::thread_rng().gen_range(0..width /2);
-    let mut y = rand::thread_rng().gen_range(0..height / 2); 
+    let mut y = rand::thread_rng().gen_range(0..height / 2);
 
     let dvd: Vec<&str> = vec![
     "⠀⠀⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣶⣦⡀",
@@ -99,7 +99,7 @@ fn main() {
             }
             println!();
         }
-       
+
         match x_dir {
             Direction::Right => {
                 if x + 1 < width - 50 {

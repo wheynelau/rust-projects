@@ -27,18 +27,18 @@ conda create -n lemma python=3.11
 
 conda activate lemma
 
-pip install -e . 
+pip install -e .
 
 ```
 
-If you're interested in documentation like every great developer, you can run `cargo doc --open --document-private-items --lib` to see the docs for Lemma.  
-Not sure if there's a better way to do this.  
+If you're interested in documentation like every great developer, you can run `cargo doc --open --document-private-items --lib` to see the docs for Lemma.
+Not sure if there's a better way to do this.
 
 _Note_: Editable mode might not be needed
 
 ## How to run
 
-The demonstration is in `benchmark.py`.  
+The demonstration is in `benchmark.py`.
 The csv and only data.noun is provided in the repo just for testing.
 
 - polars should be faster than pandas
