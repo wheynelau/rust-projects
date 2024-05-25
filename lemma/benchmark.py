@@ -36,10 +36,10 @@ def remove_stopwords_and_lemmatize(text):
     
     return ' '.join(filtered_and_lemmatized)
 
-nltk.download('stopwords')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
-nltk.download('punkt')
+nltk.download('stopwords', download_dir='./nltk_data')
+nltk.download('wordnet', download_dir='./nltk_data')
+nltk.download('omw-1.4', download_dir='./nltk_data')
+nltk.download('punkt', download_dir='./nltk_data')
 
 lemmatizer = Lemma()
 
