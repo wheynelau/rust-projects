@@ -71,6 +71,7 @@ docs/_build/
 # Pyenv
 .python-version
 
-WNdb/
+WNdb/*
+!WNdb/data.noun
 
 /target
