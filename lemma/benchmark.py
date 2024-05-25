@@ -39,10 +39,11 @@ def remove_stopwords_and_lemmatize(text):
 nltk.download('stopwords')
 nltk.download('wordnet')
 nltk.download('omw-1.4')
+nltk.download('punkt')
 
 lemmatizer = Lemma()
 
-df = pd.read_csv('data/imdb_dataset.csv')[:1000]
+df = pd.read_csv('data/imdb_dataset.csv')
 
 with Timer("Rust map"):
     rust = df['review'].map(lambda x: lemmatizer(x))
