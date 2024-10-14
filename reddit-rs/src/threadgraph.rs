@@ -5,9 +5,25 @@ use petgraph::graph::{DiGraph, NodeIndex, UnGraph};
 use petgraph::visit::{Dfs, DfsPostOrder, IntoNeighborsDirected};
 
 pub struct ThreadGraph {
-    graph: Graph<Arc<String>, ()>,
-    node_map: HashMap<Arc<String>, NodeIndex>,
+    graph: Graph<Arc<str>, ()>,
+    node_map: HashMap<Arc<str>, NodeIndex>,
     threads: Vec<NodeIndex>,
+}
+
+pub enum Reddit {
+    Thread,
+    Comment,
+}
+
+pub struct Thread {
+    pub id: String,
+    pub selftext: String,
+}
+#[derive(Clone)]
+pub struct Comment {
+    pub id: String,
+    pub body: String,
+    pub parent_id: String,
 }
 
 impl ThreadGraph {
@@ -19,8 +35,8 @@ impl ThreadGraph {
         }
     }
 
-    pub fn add_node(&mut self, id: String) -> NodeIndex {
-        let id = Arc::new(id);
+    pub fn add_node(&mut self, id: &str) -> NodeIndex {
+        let id = Arc::from(id);
         if let Some(&idx) = self.node_map.get(&id) {
             idx
         } else {
@@ -30,24 +46,26 @@ impl ThreadGraph {
         }
     }
 
-    pub fn add_edge(&mut self, from_id: String, to_id: String) {
+    pub fn add_edge(&mut self, from_id: &str, to_id: &str) {
         let from_idx = self.add_node(from_id);
         let to_idx = self.add_node(to_id);
         self.graph.add_edge(from_idx, to_idx, ());
     }
 
-    pub fn tranverse(&self) { // Assuming 0 is the root node
+    pub fn tranverse(&self, vec_threads: Vec<Thread>, vec_comments: Vec<Comment>) { // Assuming 0 is the root node
 
         for start in self.threads.iter() {
             let mut dfs = Dfs::new(&self.graph, *start);
-    
+            let mut leaf_paths: Vec<usize> = Vec::new();
             print!("[{}] ", start.index());
-    
+            leaf_paths.push(start.index());
             while let Some(visited) = dfs.next(&self.graph) {
                 print!(" {}", visited.index());
+                leaf_paths.push(visited.index());
             }
-    
+            if leaf_paths.len() > 1{
             println!();
+            }
         }
 
         // // Print leaf paths
@@ -59,17 +77,20 @@ impl ThreadGraph {
         //     println!(" <-");
         // }
     }
+    
     pub fn show_threads(&self) {
         for node in self.graph.node_indices() {
             println!("{:?}", self.graph[node]);
         }
     }
-    pub fn add_threads(&mut self, id: String){
+    pub fn add_threads(&mut self, id: &str) {
         let idx = self.add_node(id);
         self.threads.push(idx);
 
     }
     pub fn is_in_map(&self, id: &str) -> bool {
-        self.node_map.contains_key(&Arc::new(id.to_string()))
-    }   
+        let id = Arc::from(id);
+        self.node_map.contains_key(&id)
+    }
+    
 }
