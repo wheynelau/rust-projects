@@ -73,10 +73,10 @@ fn get_threads(path: &str) -> Vec<(String,Vec<String>)> {
             });
     };
     // add edges
-    threads.extend(comments.iter().map(|thread| {
+    comments.into_iter().for_each(|thread| {
         threadgraph.add_edge(&thread.parent_post_id, &thread.id);
-        thread.clone()
-    }));
+        threads.push(thread);
+    });
     threadgraph.tranverse(threads)
 }
 

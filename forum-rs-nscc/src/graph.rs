@@ -53,15 +53,14 @@ impl ThreadGraph {
                 // get first idx for the root
                 let root_thread = &vec_threads[threads[0]];
                 let vec_string: Vec<String> = threads
-                    .iter_mut()
-                    .map(|thread| vec_threads[*thread].pagetext.clone())
+                    .into_iter()
+                    .map(|thread| vec_threads[thread].pagetext.clone())
                     .collect();
                 threads_counter += 1;
                 final_threads.push((root_thread.id.clone(), vec_string));
             }
         }
         // println!("Longest thread: {}", long_string);
-        dbg!("Total threads: {}", threads_counter);
         // println!("Longest thread: {}", longest_thread);
         final_threads
     }
