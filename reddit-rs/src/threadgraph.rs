@@ -1,7 +1,7 @@
 use petgraph::Graph;
 use std::collections::HashMap;
 use petgraph::graph::{DiGraph, NodeIndex};
-use petgraph::visit::{Bfs, Dfs};
+use petgraph::visit::Dfs;
 
 #[derive(Default)]
 pub struct ThreadGraph {
