@@ -1,18 +1,18 @@
 use petgraph::Graph;
 use std::collections::HashMap;
-use std::sync::Arc;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::{Bfs, Dfs};
 
 #[derive(Default)]
 pub struct ThreadGraph {
-    graph: Graph<Arc<str>, ()>,
-    node_map: HashMap<Arc<str>, NodeIndex>,
+    graph: Graph<String, ()>,
+    node_map: HashMap<String, NodeIndex>,
     threads: Vec<NodeIndex>,
 }
 
 use crate::reddit::Reddit;
 use crate::writer::{JsonlWriter, JsonEntry};
+
 
 impl ThreadGraph {
     pub fn new() -> Self {
@@ -23,24 +23,23 @@ impl ThreadGraph {
         }
     }
 
-    pub fn add_node(&mut self, id: &str) -> NodeIndex {
-        let id = Arc::from(id);
-        if let Some(&idx) = self.node_map.get(&id) {
+    pub fn add_node(&mut self, id: &String) -> NodeIndex {
+        if let Some(&idx) = self.node_map.get(id) {
             idx
         } else {
-            let idx = self.graph.add_node(Arc::clone(&id));
-            self.node_map.insert(id, idx);
+            let idx = self.graph.add_node(id.clone());
+            self.node_map.insert(id.to_string(), idx);
             idx
         }
     }
 
-    pub fn add_edge(&mut self, from_id: &str, to_id: &str) {
+    pub fn add_edge(&mut self, from_id: &String, to_id: &String) {
         let from_idx = self.add_node(from_id);
         let to_idx = self.add_node(to_id);
         self.graph.add_edge(from_idx, to_idx, ());
     }
 
-    pub fn tranverse(&self, mut vec_threads: Vec<Reddit>, output: Option<&str>) {
+    pub fn tranverse(&self, vec_threads: Vec<Reddit>, output: Option<&str>) {
         let mut threads_counter: usize = 0;
         
         let mut writer = output.map(|output| JsonlWriter::new(output).unwrap());
@@ -60,6 +59,7 @@ impl ThreadGraph {
                 .map(|thread| vec_threads[*thread].selftext.clone())
                 .collect::<Vec<_>>()
                 .join("\n");
+                
                 if let Some(writer_ref) = writer.as_mut() {
                     let entry = JsonEntry {
                         length: inner_long_string.split_whitespace().count(),
@@ -84,14 +84,13 @@ impl ThreadGraph {
             println!("{:?}", self.graph[node]);
         }
     }
-    pub fn add_threads(&mut self, id: &str) {
+    pub fn add_threads(&mut self, id: &String) {
         let idx = self.add_node(id);
         self.threads.push(idx);
 
     }
-    pub fn is_in_map(&self, id: &str) -> bool {
-        let id = Arc::from(id);
-        self.node_map.contains_key(&id)
+    pub fn is_in_map(&self, id: &String) -> bool {
+        self.node_map.contains_key(id)
     }
     
 }

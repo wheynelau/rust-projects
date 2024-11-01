@@ -1,5 +1,6 @@
-use std::fs::{OpenOptions, File};
+use std::fs::File;
 use std::io::{BufWriter, Write};
+use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 pub struct JsonlWriter {
@@ -15,10 +16,8 @@ pub struct JsonEntry {
 impl JsonlWriter {
     pub fn new(filename: &str) -> std::io::Result<Self> {
 
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(filename)?;
+        let file_path = Path::new(filename);
+        let file = File::create(file_path)?;
         
         Ok(JsonlWriter {
             writer: BufWriter::new(file),

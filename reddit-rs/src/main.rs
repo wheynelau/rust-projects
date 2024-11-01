@@ -9,13 +9,20 @@ pub mod threadgraph;
 pub mod reddit;
 pub mod writer;
 pub mod args;
+pub mod globals;
 use reddit::Reddit;
 use args::Cli;
+
 
 fn main() -> std::io::Result<()> {
 
     let args = Cli::parse();
     let prefix = &args.prefix;
+    let tokenizer = &args.tokenizer;
+    if tokenizer.is_some() {
+        let tokenizer_name = tokenizer.as_ref().unwrap();
+        globals::init_tokenizer(tokenizer_name); 
+    }
     let output = args.get_output();
     let thread_file = File::open(format!("{}_submissions.zst", prefix))?;
     let comment_file = File::open(format!("{}_comments.zst", prefix))?;
