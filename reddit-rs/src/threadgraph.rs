@@ -1,35 +1,23 @@
 use petgraph::Graph;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::sync::Arc;
-use petgraph::graph::{DiGraph, NodeIndex, UnGraph};
-use petgraph::visit::{Dfs, DfsPostOrder, IntoNeighborsDirected};
+use petgraph::graph::{DiGraph, NodeIndex};
+use petgraph::visit::{Bfs, Dfs};
 
+#[derive(Default)]
 pub struct ThreadGraph {
     graph: Graph<Arc<str>, ()>,
     node_map: HashMap<Arc<str>, NodeIndex>,
     threads: Vec<NodeIndex>,
 }
 
-pub enum Reddit {
-    Thread,
-    Comment,
-}
-
-pub struct Thread {
-    pub id: String,
-    pub selftext: String,
-}
-#[derive(Clone)]
-pub struct Comment {
-    pub id: String,
-    pub body: String,
-    pub parent_id: String,
-}
+use crate::reddit::Reddit;
+use crate::writer::{JsonlWriter, JsonEntry};
 
 impl ThreadGraph {
     pub fn new() -> Self {
         ThreadGraph {
-            graph: Graph::new(),
+            graph: DiGraph::new(),
             node_map: HashMap::new(),
             threads: Vec::new(),
         }
@@ -52,30 +40,43 @@ impl ThreadGraph {
         self.graph.add_edge(from_idx, to_idx, ());
     }
 
-    pub fn tranverse(&self, vec_threads: Vec<Thread>, vec_comments: Vec<Comment>) { // Assuming 0 is the root node
+    pub fn tranverse(&self, mut vec_threads: Vec<Reddit>, output: Option<&str>) {
+        let mut threads_counter: usize = 0;
+        
+        let mut writer = output.map(|output| JsonlWriter::new(output).unwrap());
 
-        for start in self.threads.iter() {
-            let mut dfs = Dfs::new(&self.graph, *start);
-            let mut leaf_paths: Vec<usize> = Vec::new();
-            print!("[{}] ", start.index());
-            leaf_paths.push(start.index());
-            while let Some(visited) = dfs.next(&self.graph) {
-                print!(" {}", visited.index());
-                leaf_paths.push(visited.index());
+        for start in self.graph.node_indices() {
+            let mut bfs = Dfs::new(&self.graph, start);
+
+            let mut threads: Vec<usize> = Vec::new();
+            
+            while let Some(visited) = bfs.next(&self.graph) {
+                threads.push(visited.index());
             }
-            if leaf_paths.len() > 1{
-            println!();
+    
+            if threads.len() > 1 {
+                let inner_long_string = threads
+                .iter_mut()
+                .map(|thread| vec_threads[*thread].selftext.clone())
+                .collect::<Vec<_>>()
+                .join("\n");
+                if let Some(writer_ref) = writer.as_mut() {
+                    let entry = JsonEntry {
+                        length: inner_long_string.split_whitespace().count(),
+                        raw_content: inner_long_string
+                    };
+                    writer_ref.write_line(entry).unwrap();
+                }
+                threads_counter += 1;
             }
         }
-
-        // // Print leaf paths
-        // for path in leaf_paths {
-        //     print!("[{}] ", path.back().unwrap().index());
-        //     for node in path {
-        //         print!(" {}", node.index());
-        //     }
-        //     println!(" <-");
-        // }
+        if let Some(writer_ref) = writer.as_mut() {
+            writer_ref.flush().unwrap();
+        }
+        // println!("Longest thread: {}", long_string);
+        dbg!("Total threads: {}", threads_counter);
+        // println!("Longest thread: {}", longest_thread);
+        
     }
     
     pub fn show_threads(&self) {
