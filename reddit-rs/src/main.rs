@@ -7,7 +7,7 @@ use clap::Parser;
 
 pub mod threadgraph;
 pub mod reddit;
-pub mod writer;
+pub mod utils;
 pub mod args;
 pub mod globals;
 use reddit::Reddit;

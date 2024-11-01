@@ -11,7 +11,7 @@ pub struct ThreadGraph {
 }
 
 use crate::reddit::Reddit;
-use crate::writer::{JsonlWriter, JsonEntry};
+use crate::utils::writer::{JsonlWriter, JsonEntry};
 
 
 impl ThreadGraph {
