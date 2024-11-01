@@ -1,0 +1,7 @@
+**/*
+
+!src/**/*
+!Cargo.toml
+!Cargo.lock
+!entrypoint.sh
+!*.model

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+#PBS -P personal-waynelau
+#PBS -l select=1:ncpus=128:mem=3900gb
+#PBS -l walltime=12:00:00
+#PBS -o /home/users/nus/waynelau/log-1
+#PBS -j oe
+#PBS -q normal 
+#ic004
+
+module load singularity
+
+cd $HOME/forum-rs
+
+singularity exec --bind $HOME/scratch:/input rust.sif /bin/bash -c 'cargo run --release -- --input-folder $INPUT --output-folder $OUTPUT --check-empty false --sentencepiece true >> clean_main.log'
