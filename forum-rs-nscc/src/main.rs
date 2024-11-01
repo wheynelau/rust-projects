@@ -19,7 +19,7 @@ use utils::writer::ThreadPost;
 /// Creates a Vector of BTreeMap for the JSONL file
 fn create_thread_posts(
     _forum_id: &str,
-    threads: Vec<(String, String)>,
+    threads: Vec<(String, Vec<String>)>,
     use_sentencepiece: bool,
     forum_name: String,
 ) -> Vec<ThreadPost> {
@@ -34,7 +34,7 @@ fn create_thread_posts(
         .map(|(thread_id, content)| 
             utils::processing::process(
                 thread_id.to_string(),
-                content.to_string(), 
+                content.to_vec(), 
                 forum_name.to_string(),
                 use_sentencepiece))
         .collect()
@@ -42,11 +42,12 @@ fn create_thread_posts(
 ///
 /// Handles one folder at a time
 ///
-fn get_threads(path: &str) -> Vec<(String,String)> {
+fn get_threads(path: &str) -> Vec<(String,Vec<String>)> {
 
     let entries = utils::file::single_folder(path);
     let mut threadgraph = graph::ThreadGraph::new();
     let mut threads: Vec<thread::Post> = Vec::new();
+    let mut comments: Vec<thread::Post> = Vec::with_capacity(10000);
     // this shouldn't be parallelized for safety
     for entry in entries.iter() {
         let fp = File::open(entry).unwrap();
@@ -54,19 +55,28 @@ fn get_threads(path: &str) -> Vec<(String,String)> {
         let reader = BufReader::new(fp);
 
         reader.lines()
-        .for_each(|line| {
-           if let Ok(line) = line {
-               let json: thread::JsonStruct = serde_json::from_str(&line).unwrap();
-               if let Some(thread) = thread::Post::from_json_struct(json){
-                threadgraph.add_node(&thread.id);
-                if !thread.is_thread {
-                    threadgraph.add_edge(&thread.parent_post_id, &thread.id);
-                    }
-                threads.push(thread);
-               }
-           }
-        });
-    }
+            .for_each(|line| {
+            if let Ok(line) = line {
+                let json: thread::JsonStruct = serde_json::from_str(&line).unwrap();
+                if let Some(thread) = thread::Post::from_json_struct(json){
+                    if thread.is_thread {
+                        let thread_node = threadgraph.add_node(&thread.id);
+                        threadgraph.add_threads(thread_node);
+                        threads.push(thread);
+                        }
+                    else {
+                        comments.push(thread);
+                    };
+
+                }
+            }
+            });
+    };
+    // add edges
+    threads.extend(comments.iter().map(|thread| {
+        threadgraph.add_edge(&thread.parent_post_id, &thread.id);
+        thread.clone()
+    }));
     threadgraph.tranverse(threads)
 }
 
@@ -109,7 +119,7 @@ fn main() {
     all_folders.par_iter().for_each(|folder| {
         let folder = folder.to_str().unwrap();
         let forum_id = folder.split('/').last().unwrap();
-        let threads:Vec<(String, String)> = get_threads(folder);
+        let threads:Vec<(String, Vec<String>)> = get_threads(folder);
 
         let posts: Vec<ThreadPost> =
             create_thread_posts(forum_id, threads, use_sentencepiece, source.clone());

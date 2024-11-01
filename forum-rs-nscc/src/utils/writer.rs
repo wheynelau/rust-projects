@@ -7,8 +7,8 @@ use rayon::prelude::*;
 /// Enum for serialization
 #[derive(Serialize)]
 pub struct ThreadPost {
-    pub raw_content: String,
     pub length: usize,
+    pub raw_content: String,
     pub thread_id: String,
     pub source: String,
 }

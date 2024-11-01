@@ -22,11 +22,15 @@ fn clean_text(text: String) -> String {
 
 pub fn process(
     thread_id: String,
-    content: String,
+    content: Vec<String>,
     forum_name: String,
     use_sentencepiece: bool,
 ) -> utils::writer::ThreadPost {
-    let content = utils::processing::clean_text(content);
+    let content: Vec<String> = content
+        .into_iter()
+        .map(clean_text)
+        .collect();
+    let content = content.join("\n");
     let length: usize = match use_sentencepiece {
         true => globals::TOKENIZER
             .get()
@@ -37,8 +41,8 @@ pub fn process(
         false => content.split_whitespace().count(),
     };
     utils::writer::ThreadPost {
-        raw_content: content,
         length,
+        raw_content: content,
         thread_id,
         source: forum_name,
     }

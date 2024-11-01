@@ -1,7 +1,7 @@
-use petgraph::Graph;
-use std::collections::HashMap;
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::Dfs;
+use petgraph::Graph;
+use std::collections::HashMap;
 
 use crate::thread::Post;
 
@@ -37,28 +37,27 @@ impl ThreadGraph {
         self.graph.add_edge(from_idx, to_idx, ());
     }
 
-    pub fn tranverse(&self, vec_threads: Vec<Post>) -> Vec<(String,String)> {
+    pub fn tranverse(&self, vec_threads: Vec<Post>) -> Vec<(String, Vec<String>)> {
         let mut threads_counter: usize = 0;
-        let mut final_threads: Vec<(String,String)> = Vec::with_capacity(10000);
-        for start in self.graph.node_indices() {
-            let mut bfs = Dfs::new(&self.graph, start);
+        let mut final_threads: Vec<(String, Vec<String>)> = Vec::with_capacity(10000);
+        for start in self.threads.iter() {
+            let mut bfs = Dfs::new(&self.graph, *start);
 
             let mut threads: Vec<usize> = Vec::new();
-            
+
             while let Some(visited) = bfs.next(&self.graph) {
                 threads.push(visited.index());
             }
-    
+
             if threads.len() > 1 {
                 // get first idx for the root
                 let root_thread = &vec_threads[threads[0]];
-                let inner_long_string = threads
-                .iter_mut()
-                .map(|thread| vec_threads[*thread].pagetext.clone())
-                .collect::<Vec<_>>()
-                .join("\n");
+                let vec_string: Vec<String> = threads
+                    .iter_mut()
+                    .map(|thread| vec_threads[*thread].pagetext.clone())
+                    .collect();
                 threads_counter += 1;
-                final_threads.push((root_thread.id.clone(), inner_long_string));
+                final_threads.push((root_thread.id.clone(), vec_string));
             }
         }
         // println!("Longest thread: {}", long_string);
@@ -66,19 +65,16 @@ impl ThreadGraph {
         // println!("Longest thread: {}", longest_thread);
         final_threads
     }
-    
+
     pub fn show_threads(&self) {
         for node in self.graph.node_indices() {
             println!("{:?}", self.graph[node]);
         }
     }
-    pub fn add_threads(&mut self, id: &String) {
-        let idx = self.add_node(id);
+    pub fn add_threads(&mut self, idx: NodeIndex) {
         self.threads.push(idx);
-
     }
     pub fn is_in_map(&self, id: &String) -> bool {
         self.node_map.contains_key(id)
     }
-    
 }
