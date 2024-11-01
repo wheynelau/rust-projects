@@ -1,6 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use tokenizers::models::unigram::Node;
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct JsonStruct {
