@@ -45,7 +45,6 @@ fn create_thread_posts(
 fn get_threads(path: &str) -> Vec<(String, Vec<String>)> {
     let entries = utils::file::single_folder(path);
     let mut threadgraph = graph::ThreadGraph::new();
-    let mut threads: Vec<thread::Post> = Vec::new();
     let mut comments: Vec<thread::Post> = Vec::with_capacity(10000);
     // this shouldn't be parallelized for safety
     for entry in entries.iter() {
@@ -70,9 +69,7 @@ fn get_threads(path: &str) -> Vec<(String, Vec<String>)> {
     // add edges
     for comment in comments.iter() {
         threadgraph.add_edge(&comment.parent_post_id, &comment.id);
-        threads.push(comment.clone());
     }
-    println!("threads.len: {}, path: {}", threads.len(), path);
     threadgraph.tranverse()
 }
 
@@ -112,7 +109,7 @@ fn main() {
     let total_folders = all_folders.len();
 
     let counter = Arc::new(AtomicUsize::new(0));
-    all_folders.iter().for_each(|folder| {
+    all_folders.par_iter().for_each(|folder| {
         let folder = folder.to_str().unwrap();
         let forum_id = folder.split('/').last().unwrap();
         let threads: Vec<(String, Vec<String>)> = get_threads(folder);
