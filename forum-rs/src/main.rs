@@ -109,17 +109,27 @@ fn main() {
     let total_folders = all_folders.len();
 
     let counter = Arc::new(AtomicUsize::new(0));
-    all_folders.par_iter().for_each(|folder| {
+    all_folders.iter().for_each(|folder| {
         let folder = folder.to_str().unwrap();
         let forum_id = folder.split('/').last().unwrap();
+        // time taken for threads
+        let thread_start_time = std::time::Instant::now();
         let threads: Vec<(String, Vec<String>)> = get_threads(folder);
+        let thread_duration = thread_start_time.elapsed();
+        println!("Time taken for threads: {:.2?}", thread_duration);
 
+        let posts_start_time = std::time::Instant::now();
         let posts: Vec<ThreadPost> =
             create_thread_posts(forum_id, threads, use_sentencepiece, source.clone());
+        let posts_duration = posts_start_time.elapsed();
+        println!("Time taken for posts: {:.2?}", posts_duration);
 
         if !posts.is_empty() {
+            let write_start_time = std::time::Instant::now();
             let output_file: PathBuf = Path::new(&out_folder).join(format!("{}.jsonl", forum_id));
             utils::writer::write_jsonl(posts, output_file).unwrap();
+            let write_duration = write_start_time.elapsed();
+            println!("Time taken for writing: {:.2?}", write_duration);
         }
 
         let count = counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
