@@ -90,7 +90,7 @@ impl ThreadGraph {
         // self.show_roots();
         // let mut root_id: String = String::new();
         // print number of nodes
-        dbg!(self.graph.node_count());
+        // dbg!(self.graph.node_count());
         let mut final_threads: Vec<(String, Vec<String>)> = Vec::with_capacity(10000);
         for start in self.threads.iter() {
             // skip if not root
