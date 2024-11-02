@@ -2,7 +2,7 @@ use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::Dfs;
 use petgraph::Graph;
 use std::collections::{HashMap, HashSet};
-
+use rayon::prelude::*;
 use crate::thread::Post;
 
 #[derive(Default)]
@@ -90,7 +90,7 @@ impl ThreadGraph {
         // self.show_roots();
         // let mut root_id: String = String::new();
         // print number of nodes
-        // dbg!(self.graph.node_count());
+        //dbg!(self.graph.node_count());
         let mut final_threads: Vec<(String, Vec<String>)> = Vec::with_capacity(10000);
         for start in self.threads.iter() {
             // skip if not root
@@ -102,7 +102,8 @@ impl ThreadGraph {
             }
             let root_id = self.graph[*start].clone();
             let vec_string: Vec<String> = threads
-                .iter()
+                .par_iter()
+                .with_min_len(100)
                 .map(|thread| {
                     // print!("{} ", thread);
                     self.allthreads[*thread].pagetext.clone()
