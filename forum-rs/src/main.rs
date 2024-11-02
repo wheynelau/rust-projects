@@ -67,16 +67,16 @@ fn get_threads(path: &str) -> Vec<(String,Vec<String>)> {
                     else {
                         comments.push(thread);
                     };
-
                 }
             }
             });
     };
     // add edges
-    comments.into_iter().for_each(|thread| {
-        threadgraph.add_edge(&thread.parent_post_id, &thread.id);
-        threads.push(thread);
-    });
+    for comment in comments.iter() {
+        threadgraph.add_edge(&comment.parent_post_id, &comment.id);
+        threads.push(comment.clone());
+    }
+    println!("threads.len: {}, path: {}", threads.len(), path);
     threadgraph.tranverse(threads)
 }
 
@@ -116,7 +116,7 @@ fn main() {
     let total_folders = all_folders.len();
     
     let counter = Arc::new(AtomicUsize::new(0));
-    all_folders.par_iter().for_each(|folder| {
+    all_folders.iter().for_each(|folder| {
         let folder = folder.to_str().unwrap();
         let forum_id = folder.split('/').last().unwrap();
         let threads:Vec<(String, Vec<String>)> = get_threads(folder);
