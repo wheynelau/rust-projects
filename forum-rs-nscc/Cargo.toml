@@ -1,6 +1,6 @@
 [package]
 name = "forum-rs"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [[bin]]
@@ -8,11 +8,11 @@ name = "clean-reddit"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5.4", features = ["derive"] }
-lazy_static = "1.4.0"
+clap = { version = "4.5.20", features = ["derive"] }
+lazy_static = "1.5.0"
 petgraph = "0.6.5"
 rayon = "1.10.0"
-regex = "1.10.4"
-serde = { version = "1.0.203", features = ["derive"] }
-serde_json = "1.0.117"
+regex = "1.11.1"
+serde = { version = "1.0.214", features = ["derive"] }
+serde_json = "1.0.132"
 tokenizers = { version = "0.20.1", features = ["hf-hub", "http"] }
