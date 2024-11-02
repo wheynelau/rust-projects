@@ -1,8 +1,8 @@
+use rayon::prelude::*;
+use serde::Serialize;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
-use serde::{Serialize};
-use rayon::prelude::*;
 
 /// Enum for serialization
 #[derive(Serialize)]
@@ -14,10 +14,7 @@ pub struct ThreadPost {
 }
 
 /// Writes a vector of ThreadPost to a JSONL file
-pub fn write_jsonl(
-    data: Vec<ThreadPost>,
-    file_path: PathBuf,
-) -> std::io::Result<()> {
+pub fn write_jsonl(data: Vec<ThreadPost>, file_path: PathBuf) -> std::io::Result<()> {
     // Trying to implement rayon
     // Note that the size of the input should be checked before entering here
     let chunk_size: usize = 50000;

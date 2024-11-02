@@ -8,7 +8,7 @@ pub struct JsonStruct {
     parent_post_id: String,
     root_post_id: String,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Post {
     pub id: String,
     pub is_thread: bool,
@@ -18,6 +18,15 @@ pub struct Post {
 }
 
 impl Post {
+    pub fn placeholder(id: String) -> Self {
+        Post {
+            id: id.clone(),
+            is_thread: true,
+            pagetext: "".to_string(),
+            parent_post_id: id.clone(),
+            root_post_id: id,
+        }
+    }
     pub fn from_json_struct(json: JsonStruct) -> Option<Self> {
         Some(Post {
             id: json.id,

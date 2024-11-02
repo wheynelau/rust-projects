@@ -1,7 +1,7 @@
 // src/globals.rs
+use lazy_static::lazy_static;
 use std::sync::OnceLock;
 use tokenizers;
-use lazy_static::lazy_static;
 
 pub static TOKENIZER: OnceLock<tokenizers::Tokenizer> = OnceLock::new();
 lazy_static! {
@@ -30,9 +30,6 @@ pub fn get_tokenizer() -> Option<&'static tokenizers::Tokenizer> {
 }
 
 // Helper function to tokenize directly
-pub fn tokenize(content:&str) -> tokenizers::Encoding {
-    TOKENIZER.get()
-    .unwrap()
-    .encode(content, false)
-    .unwrap()
+pub fn tokenize(content: &str) -> tokenizers::Encoding {
+    TOKENIZER.get().unwrap().encode(content, false).unwrap()
 }

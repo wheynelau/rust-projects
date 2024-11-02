@@ -31,7 +31,6 @@ pub fn all_folders(forum_folder: &str) -> Result<Vec<PathBuf>, io::Error> {
     Ok(subfolders)
 }
 
-
 /// Get all files in a forum subfolder
 ///
 /// The folder should contain JSONL files for the downstream tasks
@@ -46,11 +45,9 @@ pub fn all_folders(forum_folder: &str) -> Result<Vec<PathBuf>, io::Error> {
 /// let entries = single_folder("forum/subforum");
 /// ```
 pub fn single_folder(folder: &str) -> Vec<PathBuf> {
-    let entries = fs::read_dir(folder)
+    fs::read_dir(folder)
         .unwrap()
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()
-        .unwrap();
-
-    entries
+        .unwrap()
 }

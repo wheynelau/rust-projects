@@ -26,10 +26,7 @@ pub fn process(
     forum_name: String,
     use_sentencepiece: bool,
 ) -> utils::writer::ThreadPost {
-    let content: Vec<String> = content
-        .into_iter()
-        .map(clean_text)
-        .collect();
+    let content: Vec<String> = content.into_iter().map(clean_text).collect();
     let content = content.join("\n");
     let length: usize = match use_sentencepiece {
         true => globals::TOKENIZER

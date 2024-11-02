@@ -21,11 +21,7 @@ pub struct Cli {
         help = "Tokenizer name: Accepts huggingface <org>/<name> or a path to tokenizer.json\nIf not provided, will split and count words"
     )]
     pub tokenizer: Option<String>,
-    #[clap(
-        long,
-        default_value = "reddit",
-        help="Source of the forum"
-    )]
+    #[clap(long, default_value = "reddit", help = "Source of the forum")]
     pub source: String,
     #[clap(
         long,

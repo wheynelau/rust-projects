@@ -10,9 +10,9 @@ use std::{
 
 pub mod args;
 pub mod globals;
-pub mod utils;
-pub mod thread;
 pub mod graph;
+pub mod thread;
+pub mod utils;
 
 use utils::writer::ThreadPost;
 
@@ -27,23 +27,22 @@ fn create_thread_posts(
 
     // allocation takes time, so we only par_iter if size > 100
     threads
-        .iter()
-        .collect::<Vec<_>>()
         .par_iter()
         .with_min_len(100)
-        .map(|(thread_id, content)| 
+        .map(|(thread_id, content)| {
             utils::processing::process(
                 thread_id.to_string(),
-                content.to_vec(), 
+                content.to_vec(),
                 forum_name.to_string(),
-                use_sentencepiece))
+                use_sentencepiece,
+            )
+        })
         .collect()
 }
 ///
 /// Handles one folder at a time
 ///
-fn get_threads(path: &str) -> Vec<(String,Vec<String>)> {
-
+fn get_threads(path: &str) -> Vec<(String, Vec<String>)> {
     let entries = utils::file::single_folder(path);
     let mut threadgraph = graph::ThreadGraph::new();
     let mut threads: Vec<thread::Post> = Vec::new();
@@ -54,30 +53,27 @@ fn get_threads(path: &str) -> Vec<(String,Vec<String>)> {
 
         let reader = BufReader::new(fp);
 
-        reader.lines()
-            .for_each(|line| {
+        reader.lines().for_each(|line| {
             if let Ok(line) = line {
                 let json: thread::JsonStruct = serde_json::from_str(&line).unwrap();
-                if let Some(thread) = thread::Post::from_json_struct(json){
+                if let Some(thread) = thread::Post::from_json_struct(json) {
+                    let thread_node = threadgraph.add_node(thread.clone());
                     if thread.is_thread {
-                        let thread_node = threadgraph.add_node(&thread.id);
                         threadgraph.add_threads(thread_node);
-                        threads.push(thread);
-                        }
-                    else {
+                    } else {
                         comments.push(thread);
                     };
                 }
             }
-            });
-    };
+        });
+    }
     // add edges
     for comment in comments.iter() {
         threadgraph.add_edge(&comment.parent_post_id, &comment.id);
         threads.push(comment.clone());
     }
     println!("threads.len: {}, path: {}", threads.len(), path);
-    threadgraph.tranverse(threads)
+    threadgraph.tranverse()
 }
 
 fn main() {
@@ -114,12 +110,12 @@ fn main() {
     // let out_folder : &str = "./output/";
     let all_folders: Vec<PathBuf> = utils::file::all_folders(&folder).unwrap();
     let total_folders = all_folders.len();
-    
+
     let counter = Arc::new(AtomicUsize::new(0));
     all_folders.iter().for_each(|folder| {
         let folder = folder.to_str().unwrap();
         let forum_id = folder.split('/').last().unwrap();
-        let threads:Vec<(String, Vec<String>)> = get_threads(folder);
+        let threads: Vec<(String, Vec<String>)> = get_threads(folder);
 
         let posts: Vec<ThreadPost> =
             create_thread_posts(forum_id, threads, use_sentencepiece, source.clone());
@@ -130,15 +126,15 @@ fn main() {
         }
 
         let count = counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-            print!(
-                "\rProcessed {}/{} folders. Current duration: {:.2}s",
-                count,
-                total_folders,
-                start_time.elapsed().as_secs()
-            );
+        print!(
+            "\rProcessed {}/{} folders. Current duration: {:.2}s",
+            count,
+            total_folders,
+            start_time.elapsed().as_secs()
+        );
     });
 
-    println!("\nAll done! Time taken: {:?}", start_time.elapsed());
+    println!("\nAll done! Time taken: {:.3?}", start_time.elapsed());
 }
 #[cfg(test)]
 mod tests {
