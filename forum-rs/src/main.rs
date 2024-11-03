@@ -90,10 +90,11 @@ fn main() {
         while running_clone.load(Ordering::SeqCst) {
             let count = counter_clone.load(Ordering::SeqCst);
             print!(
-                "\rProcessed {}/{} folders. Current duration: {:.2}s",
+                "\rProcessed {}/{} folders. Current duration: {:2}m {:.2}s",
                 count,
                 total_folders,
-                start_time_clone.elapsed().as_secs()
+                start_time_clone.elapsed().as_secs() / 60,
+                start_time_clone.elapsed().as_secs() % 60
             );
             std::io::stdout().flush().unwrap();
             std::thread::sleep(Duration::from_millis(500));
