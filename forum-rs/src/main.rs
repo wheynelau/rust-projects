@@ -206,11 +206,12 @@ fn main() {
         }
         // One final update after completion
         let count = counter_clone.load(Ordering::SeqCst);
-        println!(
-            "\rProcessed {}/{} folders. Current duration: {:.2}s",
+        print!(
+            "\rProcessed {}/{} folders. Current duration: {:2}m {:.2}s",
             count,
             total_folders,
-            start_time_clone.elapsed().as_secs()
+            start_time_clone.elapsed().as_secs() / 60,
+            start_time_clone.elapsed().as_secs() % 60
         );
     });
 

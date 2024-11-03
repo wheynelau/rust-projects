@@ -25,7 +25,7 @@ fn get_chunk_size(bytes: usize, data: &[ThreadPost]) -> usize {
 }
 
 /// Writes a vector of ThreadPost to a JSONL file
-pub fn write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
+pub fn _write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
     // Trying to implement rayon
     // Note that the size of the input should be checked before entering here
     let chunk_size = get_chunk_size(bytes, &data);
@@ -61,6 +61,27 @@ pub fn write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> s
             });
         Ok(())
     }
+}
+
+pub fn write_jsonl(data: Vec<ThreadPost>, _bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
+
+
+    let folder = file_path.parent().unwrap().to_str().unwrap();
+    let stem = file_path.file_stem().unwrap().to_str().unwrap();
+    let extension = file_path.extension().unwrap().to_str().unwrap();
+
+    let file_path = Path::new(folder).join(format!("{}_0.{}", stem, extension));
+    let file = File::create(file_path)?;
+    let handle = std::thread::spawn(move || {
+        let mut writer = BufWriter::new(file);
+
+        for hashmap in data {
+            let json_line = serde_json::to_string(&hashmap).unwrap();
+            writeln!(&mut writer, "{}", json_line).unwrap();
+        }
+    });
+    handle.join().unwrap();
+    Ok(())
 }
 
 #[cfg(test)]

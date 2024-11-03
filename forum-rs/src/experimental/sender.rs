@@ -88,7 +88,6 @@ pub fn get_threads(path: &str) -> Vec<(String, Vec<String>)> {
 
         reader
             .lines()
-            .par_bridge()
             .filter_map(|line| line.ok())
             .filter_map(|line| {
                 serde_json::from_str::<forum_thread::JsonStruct>(&line)
