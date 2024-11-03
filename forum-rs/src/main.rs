@@ -7,7 +7,7 @@ use std::io::Write;
 use std::{
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering, AtomicU64},
         Arc,
     },
 };
@@ -49,6 +49,10 @@ pub mod globals;
 pub mod graph;
 pub mod utils;
 
+static TOTAL_TIME_GET_THREADS: AtomicU64 = AtomicU64::new(0);
+static TOTAL_TIME_CREATE_POSTS: AtomicU64 = AtomicU64::new(0);
+static TOTAL_TIME_WRITE_JSONL: AtomicU64 = AtomicU64::new(0);
+
 /// Process the folder
 ///
 /// What this function does:
@@ -81,19 +85,28 @@ fn process_folder(folder: &Path, out_folder: &String, use_sentencepiece: &bool, 
     let folder = folder.to_str().unwrap();
     let forum_id = folder.split('/').last().unwrap();
 
+    let start = Instant::now();
     let threads: Vec<(String, Vec<String>)> = experimental::sender::get_threads(folder);
+    let get_threads_time = start.elapsed().as_secs();
+    TOTAL_TIME_GET_THREADS.fetch_add(get_threads_time, Ordering::SeqCst);
 
+    let start = Instant::now();
     let (posts, bytes) = forum_thread::create_thread_posts(
         forum_id,
         threads,
         *use_sentencepiece,
         source.to_string(),
     );
+    let create_posts_time = start.elapsed().as_secs();
+    TOTAL_TIME_CREATE_POSTS.fetch_add(create_posts_time, Ordering::SeqCst);
 
+    let start = Instant::now();
     if !posts.is_empty() {
         let output_file: PathBuf = Path::new(&out_folder).join(format!("{}.jsonl", forum_id));
         utils::writer::write_jsonl(posts, bytes, output_file).unwrap();
     }
+    let write_jsonl_time = start.elapsed().as_secs();
+    TOTAL_TIME_WRITE_JSONL.fetch_add(write_jsonl_time, Ordering::SeqCst);
 }
 ///
 /// Entry point of the program
@@ -140,6 +153,9 @@ fn main() {
     let source: String = args.source;
     let use_sentencepiece: bool = tokenizer.as_ref().is_some();
 
+    // Initialize regex
+
+    globals::init_regex();
     if let Some(tokenizer) = tokenizer {
         globals::init_tokenizer(&tokenizer);
     }
@@ -205,6 +221,20 @@ fn main() {
     // After the loop completes, stop the progress thread
     running.store(false, Ordering::SeqCst);
     progress_thread.join().unwrap();
+
+    let num_threads: u64= rayon::current_num_threads() as u64;
+    println!(
+        "Total time taken for get_threads: {:.2}s",
+        TOTAL_TIME_GET_THREADS.load(Ordering::SeqCst) / num_threads
+    );
+    println!(
+        "Total time taken for create_posts: {:.2}s",
+        TOTAL_TIME_CREATE_POSTS.load(Ordering::SeqCst) / num_threads
+    );
+    println!(
+        "Total time taken for write_jsonl: {:.2}s",
+        TOTAL_TIME_WRITE_JSONL.load(Ordering::SeqCst) / num_threads
+    );
 }
 #[cfg(test)]
 mod main_tests {
