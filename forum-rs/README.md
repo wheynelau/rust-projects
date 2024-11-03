@@ -1,20 +1,25 @@
-# This rust module is for data processing of reddit forums
+# Forum rs
+
+To use the rust documentation, you can use the following command. This assumes you have rust installed.  
+```bash
+cargo doc --open
+```
 
 ## Pre-requisites
 
 - Rust
-```
+```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 This works for non root users as well.
 - Other packages (Linux tested)
-```
+```bash
 sudo apt install libssl-dev pkg-config build-essential
 ```
 
 Single block:
-```
+```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 sudo apt install libssl-dev pkg-config build-essential
 ```
@@ -23,18 +28,18 @@ sudo apt install libssl-dev pkg-config build-essential
 
 1. Clone this branch
 2. chdir to this directory
-```
+```bash
 cd nscc_working/engr/data_procressing/forum-rs-nscc
 ```
 3. Run the following command to run, the initial build might take some time
-```
+```bash
 # Run with tokenizer
 cargo run --release -- --input ./test_data/ --output output --safe false --tokenizer meta-llama/Meta-Llama-3-8B
 # Run without tokenizer
 cargo run --release -- --input ./test_data/ --output output --safe false
 ```
 Alternatively, you can install and run it anywhere  
-```
+```bash
 cargo install --path .
 clean-reddit --input ./test_data/ --output output --safe false
 ```
@@ -49,18 +54,18 @@ Job killed, this is due to the large memory usage of the program. You can reduce
 Depending on the tokenizer used, you may need to run `EXPORT HF_TOKEN=your_token` to set the token for the huggingface library.  
 Alternatively, you can download the `tokenizer.json` file and run it with the following command
 
-```
+```bash
 cargo run --release -- --input ./test_data/ --output output --safe false --tokenizer tokenizer.json
 ```
 ### Parallelism  
 
 The code will run in parallel by default. To reduce parallelism, use this environment variable
-```
+```bash
 export RAYON_NUM_THREADS=32
 ```
 
 You can use `--help` to get the following information
-```
+```bash
 cargo run --release -- --help
 
 Struct for CLI

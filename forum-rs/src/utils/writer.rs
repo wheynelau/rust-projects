@@ -18,9 +18,9 @@ pub struct ThreadPost {
     pub source: String,
 }
 
-fn get_chunk_size(bytes: usize, data: &Vec<ThreadPost>) -> usize {
+fn get_chunk_size(bytes: usize, data: &[ThreadPost]) -> usize {
     let num_files = bytes.div_ceil(MAX_BYTES_PER_FILE);
-    let num_splits = (num_files as usize).max(1);
+    let num_splits = num_files.max(1);
     data.len().div_ceil(num_splits)
 }
 

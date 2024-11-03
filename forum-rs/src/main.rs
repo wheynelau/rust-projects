@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use clap::Parser;
 use rayon::prelude::*;
 use std::fs::{self};
@@ -11,19 +13,43 @@ use std::{
 };
 
 use std::time::{Duration, Instant};
+
+/**
+
+# Struct for the command line arguments
+
+# Arguments
+
+* `input` - The input folder containing the forum data
+* `output` - The output folder where the processed data will be stored
+* `tokenizer` - The tokenizer to use for tokenization
+* `source` - The source of the data
+* `safe` - Whether to overwrite the output folder or not
+
+# Panics
+
+* If the input folder does not exist
+* If the output folder does not exist
+* If the tokenizer is not valid
+* If huggingface hub is not authorized
+
+
+*/
 pub mod args;
+
+/**
+
+# Module for the experimental functions
+
+This module containes functions that may not produce the best performance but are experimental
+*/
 pub mod experimental;
 pub mod forum_thread;
 pub mod globals;
 pub mod graph;
 pub mod utils;
 
-fn process_folder(
-    folder: &PathBuf,
-    out_folder: &String,
-    use_sentencepiece: &bool,
-    source: &String,
-) {
+fn process_folder(folder: &Path, out_folder: &String, use_sentencepiece: &bool, source: &String) {
     // dbg!(&folder);
     let folder = folder.to_str().unwrap();
     let forum_id = folder.split('/').last().unwrap();
@@ -42,7 +68,43 @@ fn process_folder(
         utils::writer::write_jsonl(posts, bytes, output_file).unwrap();
     }
 }
-
+///
+/// Entry point of the program
+///
+/// This function will parse the arguments and start the processing of the folders
+///
+/// # Arguments
+///
+/// * `input` - The input folder containing the forum data
+/// * `output` - The output folder where the processed data will be stored
+/// * `tokenizer` - The tokenizer to use for tokenization
+/// * `source` - The source of the data
+/// * `safe` - Whether to overwrite the output folder or not
+///     
+/// # Example
+///
+/// ```bash
+/// cargo run --release -- --input "reddit-graph/test_main_folder/" --output "./output/" \
+///     --tokenizer "model-name" or "path-to-tokenizer.json" --source "reddit" --safe false
+/// ```
+///
+/// # Note
+///
+/// Folders must contain subfolders with the forum data
+/// ```plaintext
+/// main_folder/  
+/// ├── sub1/  
+/// │   └── *.jsonl  
+/// └── sub2/  
+///     └── *.jsonl  
+/// ```
+///
+/// The output folder will contain the processed data
+/// ```plaintext
+/// output/
+/// ├── sub1.jsonl
+/// └── sub2.jsonl
+/// ```
 fn main() {
     let args = args::Cli::parse();
     let folder: String = args.input;
@@ -110,7 +172,7 @@ fn main() {
     });
 
     all_folders.par_iter().for_each(|folder| {
-        process_folder(&folder, &out_folder, &use_sentencepiece, &source);
+        process_folder(folder, &out_folder, &use_sentencepiece, &source);
         counter.fetch_add(1, Ordering::SeqCst);
     });
     // After the loop completes, stop the progress thread
@@ -120,18 +182,6 @@ fn main() {
 #[cfg(test)]
 mod main_tests {
     use super::*;
-
-    #[test]
-    fn test_tokenizer() {
-        let encoding = globals::TOKENIZER
-            .get_or_init(|| {
-                tokenizers::Tokenizer::from_pretrained("google/gemma-2-2b", None)
-                    .expect("Unable to download tokenizer")
-            })
-            .encode("Hey there!", false)
-            .unwrap();
-        println!("{:?}", encoding.len());
-    }
     #[test]
     fn test_path() {
         let initial_path = Path::new("forum_folder/output/something.jsonl");

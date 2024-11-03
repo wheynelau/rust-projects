@@ -1,6 +1,5 @@
 use clap::Parser;
 
-/// Struct for CLI
 #[derive(Parser, Debug)]
 #[clap(
     author,

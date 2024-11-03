@@ -5,6 +5,9 @@ use petgraph::Graph;
 use rayon::prelude::*;
 use std::collections::HashMap;
 
+///
+/// ThreadGraph is a struct that represents a graph of threads and comments
+///
 #[derive(Default)]
 pub struct ThreadGraph {
     graph: Graph<String, ()>,
@@ -12,7 +15,6 @@ pub struct ThreadGraph {
     threads: Vec<NodeIndex>,
     allthreads: Vec<Post>,
 }
-
 impl ThreadGraph {
     pub fn new() -> Self {
         ThreadGraph {
@@ -181,8 +183,8 @@ mod tests {
             ("12", vec!["11", ""]),
         ];
         // sort target
-        target.sort_by(|a, b| a.0.cmp(&b.0));
-        alternative_target.sort_by(|a, b| a.0.cmp(&b.0));
+        target.sort_by(|a, b| a.0.cmp(b.0));
+        alternative_target.sort_by(|a, b| a.0.cmp(b.0));
 
         // run a loop for better determinism
         for _ in 0..10 {

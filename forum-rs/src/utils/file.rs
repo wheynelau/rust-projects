@@ -3,7 +3,7 @@ use std::io;
 use std::path::PathBuf;
 
 /// This returns the subfolders in a specified folder, do not use this direct output for
-/// the main function, as it does not provide a Vec<jsonl path>.
+/// the main function, as it does not provide a `Vec<jsonl path>`.
 ///
 /// For simplicity, additional parent folders are not accounted for, and no recursion is done.
 /// The folder structure should be as follows:

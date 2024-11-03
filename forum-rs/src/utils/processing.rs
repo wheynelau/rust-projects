@@ -16,8 +16,14 @@ use crate::utils;
 /// assert_eq!(cleaned_text, "hello world");
 /// ```
 fn clean_text(text: String) -> String {
-    let cleaned_text = globals::RE.replace_all(&text, " ");
-    let cleaned_text = globals::RE2.replace_all(&cleaned_text, " ");
+    let cleaned_text = globals::RE
+        .get()
+        .expect("Regex has not been initialized")
+        .replace_all(&text, " ");
+    let cleaned_text = globals::RE2
+        .get()
+        .expect("Regex has not been initialized")
+        .replace_all(&cleaned_text, " ");
     cleaned_text.trim().to_string()
 }
 
@@ -34,12 +40,7 @@ pub fn process(
         .collect();
     let content = content.join("\n");
     let length: usize = match use_sentencepiece {
-        true => globals::TOKENIZER
-            .get()
-            .unwrap()
-            .encode(content.as_str(), false)
-            .unwrap()
-            .len(),
+        true => globals::tokenize(&content).len(),
         false => content.split_whitespace().count(),
     };
     utils::writer::ThreadPost {
@@ -95,6 +96,8 @@ mod tests {
             ("---", ""), // only dashes
             ("===", ""), // only equals
         ];
+
+        globals::init_regex();
 
         for (input, expected) in test_cases {
             let result = utils::processing::clean_text(input.to_string());
