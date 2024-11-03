@@ -16,6 +16,17 @@ pub struct ThreadGraph {
     allthreads: Vec<Post>,
 }
 impl ThreadGraph {
+    /// Constructs a new `ThreadGraph` with a `DiGraph` and a `HashMap`
+    /// 
+    /// # Returns
+    /// 
+    /// * `ThreadGraph` - A new `ThreadGraph`
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let threadgraph = ThreadGraph::new();
+    /// ```
     pub fn new() -> Self {
         ThreadGraph {
             graph: DiGraph::new(),
@@ -24,7 +35,28 @@ impl ThreadGraph {
             allthreads: Vec::with_capacity(10000),
         }
     }
-
+    /// Adds a node to the graph and returns the index
+    /// 
+    /// If the node already exists, it will return the index of the existing node,
+    /// otherwise it will add the node to the graph and return the index. At the same time, 
+    /// it adds the node into the `allthreads` vector and the `node_map` hashmap.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `post` - `Post` - The post to add
+    /// 
+    /// # Returns
+    /// 
+    /// * `NodeIndex` - The index of the node
+    /// 
+    /// # Example
+    /// 
+    /// ```rust
+    /// let post = Post::new("1", true, "1", "1", "1");
+    /// let idx = threadgraph.add_node(post);
+    /// 
+    /// assert_eq!(idx.index(), 0);
+    /// ```
     pub fn add_node(&mut self, post: Post) -> NodeIndex {
         let id = post.id.clone();
         if let Some(&idx) = self.node_map.get(&id) {
@@ -37,11 +69,16 @@ impl ThreadGraph {
             idx
         }
     }
-
+    /// Adds an edge to the graph
+    /// 
+    /// This function will add an edge from `from_id` to `to_id` if `from_id` exists in the graph. 
+    /// If it doesn't exist, it will create a placeholder post and add it to the graph.
+    /// 
+    /// The reason for the above implementation is due to some of the threads being detached from the main thread.
     pub fn add_edge(&mut self, from_id: &String, to_id: &String) {
         // check if from_id is in map
         if !self.node_map.contains_key(from_id) {
-            // create a placeholder Post
+            // This happens when the thread is detached, where the parent does not exist
             let post = Post::placeholder(from_id.to_string());
             let idx = self.add_node(post);
             self.add_threads(idx)
@@ -84,8 +121,22 @@ impl ThreadGraph {
         println!("Found {} roots: {:?}", roots_idx.len(), &roots_idx);
         roots_idx
     }
-
+    /// Traverse the graph and return a vector of threads
+    /// 
+    /// # Returns
+    /// 
+    /// * `Vec<(String, Vec<String>)>` - A vector of tuples where the first element is the root post id and the second element is a vector of pagetext
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// let threads = threadgraph.traverse();
+    /// threads[0].0 // root post id
+    /// threads[0].1 // vector of pagetext
+    /// ```
     pub fn traverse(&self) -> Vec<(String, Vec<String>)> {
+
+        self.show_roots();
         // check for duplicates
         // self.show_roots();
         // let mut root_id: String = String::new();
@@ -141,6 +192,7 @@ mod tests {
     use super::*;
     use itertools::izip;
     use rand::prelude::*;
+    use pretty_assertions::assert_eq;
 
     fn setup() -> (ThreadGraph, Vec<Post>) {
         let test_cases = vec![
@@ -168,6 +220,9 @@ mod tests {
             .collect();
         (graph, posts)
     }
+
+    /// Test the basic functionality of the graph
+    /// 
     #[test]
     fn test_functional_graph() {
         // TODO: There should be a more idiomatic way to do this

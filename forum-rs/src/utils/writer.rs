@@ -66,6 +66,7 @@ pub fn write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> s
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     #[test]
     fn test_get_chunk_size() {
         let post = ThreadPost::default();

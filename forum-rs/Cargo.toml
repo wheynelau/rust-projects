@@ -20,4 +20,5 @@ tokenizers = { version = "0.20.1", features = ["hf-hub", "http"] }
 
 [dev-dependencies]
 itertools = "0.13.0"
+pretty_assertions = "1.4.1"
 rand = "0.8.5"

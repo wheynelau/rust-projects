@@ -49,6 +49,33 @@ pub mod globals;
 pub mod graph;
 pub mod utils;
 
+/// Process the folder
+/// 
+/// What this function does:
+/// 1. Get the threads from the folder
+/// 2. Create the thread posts
+/// 3. Write the thread posts to a file
+/// 
+/// # Arguments
+/// 
+/// * `folder` - `&Path` - The folder containing list of `jsonl` files
+/// * `out_folder` - `&String` - The output folder where the processed data will be stored
+/// * `use_sentencepiece` - `&bool` - Whether to use sentencepiece for tokenization, the name does not mean that it 
+/// will use sentencepiece, it will use the tokenizer specified in the `tokenizer` argument. 
+/// * `source` - `&String` - The source of the data. This is just for labelling. 
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use std::path::Path;
+/// 
+/// let folder = Path::new("main_folder/sub1/");
+/// let out_folder = "./output/";
+/// let use_sentencepiece = true;
+/// let source = "reddit".to_string();
+/// process_folder(folder, &out_folder, &use_sentencepiece, &source);
+/// 
+/// ```
 fn process_folder(folder: &Path, out_folder: &String, use_sentencepiece: &bool, source: &String) {
     // dbg!(&folder);
     let folder = folder.to_str().unwrap();
@@ -182,6 +209,7 @@ fn main() {
 #[cfg(test)]
 mod main_tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     #[test]
     fn test_path() {
         let initial_path = Path::new("forum_folder/output/something.jsonl");
@@ -190,5 +218,16 @@ mod main_tests {
         let extension = initial_path.extension().unwrap().to_str().unwrap();
         let new_file = format!("{}/{}_new.{}", folder, stem, extension);
         assert_eq!(new_file, "forum_folder/output/something_new.jsonl");
+    }
+
+    #[test]
+    fn test_integration() {
+        // this needs to have a folder with jsonl files
+        globals::init_regex();
+        let folder = String::from("test_data/forum_276");
+
+        let threads: Vec<(String, Vec<String>)> = experimental::sender::get_threads(&folder);
+
+        assert_eq!(threads.len(), 42);
     }
 }

@@ -143,9 +143,9 @@ fn get_threads(path: &str) -> Vec<(String, Vec<String>)> {
     // let comments = comments.lock().unwrap();
     // let mut threadgraph = threadgraph.lock().unwrap();
     // let comment_time = std::time::Instant::now();
-    for comment in comments.iter() {
-        threadgraph.add_edge(&comment.parent_post_id, &comment.id);
-    }
+    // for comment in comments.iter() {
+    //     threadgraph.add_edge(&comment.parent_post_id, &comment.id);
+    // }
     // println!("Time taken for comments: {:.2?}", comment_time.elapsed());
     // let traverse_time = std::time::Instant::now();
     threadgraph.traverse()
