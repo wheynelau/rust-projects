@@ -50,31 +50,31 @@ pub mod graph;
 pub mod utils;
 
 /// Process the folder
-/// 
+///
 /// What this function does:
 /// 1. Get the threads from the folder
 /// 2. Create the thread posts
 /// 3. Write the thread posts to a file
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `folder` - `&Path` - The folder containing list of `jsonl` files
 /// * `out_folder` - `&String` - The output folder where the processed data will be stored
-/// * `use_sentencepiece` - `&bool` - Whether to use sentencepiece for tokenization, the name does not mean that it 
-/// will use sentencepiece, it will use the tokenizer specified in the `tokenizer` argument. 
-/// * `source` - `&String` - The source of the data. This is just for labelling. 
-/// 
+/// * `use_sentencepiece` - `&bool` - Whether to use sentencepiece for tokenization, the name does not mean that it
+///     will use sentencepiece, it will use the tokenizer specified in the `tokenizer` argument.
+/// * `source` - `&String` - The source of the data. This is just for labelling.
+///
 /// # Example
-/// 
+///
 /// ```rust
 /// use std::path::Path;
-/// 
+///
 /// let folder = Path::new("main_folder/sub1/");
 /// let out_folder = "./output/";
 /// let use_sentencepiece = true;
 /// let source = "reddit".to_string();
 /// process_folder(folder, &out_folder, &use_sentencepiece, &source);
-/// 
+///
 /// ```
 fn process_folder(folder: &Path, out_folder: &String, use_sentencepiece: &bool, source: &String) {
     // dbg!(&folder);
@@ -208,6 +208,8 @@ fn main() {
 }
 #[cfg(test)]
 mod main_tests {
+    use std::collections::HashSet;
+
     use super::*;
     use pretty_assertions::assert_eq;
     #[test]
@@ -225,9 +227,26 @@ mod main_tests {
         // this needs to have a folder with jsonl files
         globals::init_regex();
         let folder = String::from("test_data/forum_276");
-
-        let threads: Vec<(String, Vec<String>)> = experimental::sender::get_threads(&folder);
+        let threads: Vec<(String, Vec<String>)> = experimental::parallel::get_threads(&folder);
+        let previous_implementation = experimental::parallel::_get_threads(&folder);
+        let sender_threads: Vec<(String, Vec<String>)> = experimental::sender::get_threads(&folder);
 
         assert_eq!(threads.len(), 42);
+        assert_eq!(previous_implementation.len(), 42);
+        assert_eq!(sender_threads.len(), 42);
+
+        // check if roots are same
+        let mut sender_roots: HashSet<String> = HashSet::new();
+        let mut parallel_roots: HashSet<String> = HashSet::new();
+
+        for (root, _) in threads.iter() {
+            sender_roots.insert(root.clone());
+        }
+
+        for (root, _) in previous_implementation.iter() {
+            parallel_roots.insert(root.clone());
+        }
+
+        assert_eq!(sender_roots, parallel_roots);
     }
 }

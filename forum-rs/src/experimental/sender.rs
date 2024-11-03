@@ -3,8 +3,8 @@ use rayon::prelude::*;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+use crate::experimental;
 use crate::forum_thread;
-use crate::graph::ThreadGraph;
 use crate::utils;
 
 #[allow(dead_code)]
@@ -61,33 +61,24 @@ drop(post_tx);
 
 
 */
-fn process_graph(
-    rx: Receiver<forum_thread::Post>,
-    mut threadgraph: ThreadGraph,
-    mut comments: Vec<forum_thread::Post>,
-) -> (ThreadGraph, Vec<forum_thread::Post>) {
+fn process_graph(rx: Receiver<forum_thread::Post>) -> experimental::graph::ThreadGraph {
+    let mut threadgraph = experimental::graph::ThreadGraph::new();
     while let Ok(thread) = rx.recv() {
-        let thread_node = threadgraph.add_node(thread.clone());
-        match thread.is_thread {
-            true => threadgraph.add_threads(thread_node),
-            false => comments.push(thread),
-        }
+        threadgraph.add_post(thread);
     }
-    (threadgraph, comments)
+    threadgraph
 }
 
 pub fn get_threads(path: &str) -> Vec<(String, Vec<String>)> {
     let entries = utils::file::single_folder(path);
     let (post_tx, post_rx) = unbounded();
     // let (string_tx, string_rx) = bounded(1000);
-    let threadgraph = ThreadGraph::new();
-    let comments: Vec<forum_thread::Post> = Vec::with_capacity(10000);
 
     // let line_handle = std::thread::spawn(move || {
     //     process_line(string_rx, post_tx);
     // });
 
-    let graph_handle = std::thread::spawn(move || process_graph(post_rx, threadgraph, comments));
+    let graph_handle = std::thread::spawn(move || process_graph(post_rx));
     // let threadgraph = Arc::new(Mutex::new(graph::ThreadGraph::new()));
     // let comments = Arc::new(Mutex::new(Vec::with_capacity(10000)));
     // this shouldn't be parallelized for safety
@@ -113,11 +104,6 @@ pub fn get_threads(path: &str) -> Vec<(String, Vec<String>)> {
     drop(post_tx);
 
     // Wait for the graph processing to complete
-    let (mut threadgraph, comments) = graph_handle.join().unwrap();
-
-    for comment in comments.iter() {
-        threadgraph.add_edge(&comment.parent_post_id, &comment.id);
-    }
-
+    let threadgraph = graph_handle.join().unwrap();
     threadgraph.traverse()
 }

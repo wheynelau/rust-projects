@@ -17,13 +17,13 @@ pub struct ThreadGraph {
 }
 impl ThreadGraph {
     /// Constructs a new `ThreadGraph` with a `DiGraph` and a `HashMap`
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `ThreadGraph` - A new `ThreadGraph`
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// let threadgraph = ThreadGraph::new();
     /// ```
@@ -36,25 +36,25 @@ impl ThreadGraph {
         }
     }
     /// Adds a node to the graph and returns the index
-    /// 
+    ///
     /// If the node already exists, it will return the index of the existing node,
-    /// otherwise it will add the node to the graph and return the index. At the same time, 
+    /// otherwise it will add the node to the graph and return the index. At the same time,
     /// it adds the node into the `allthreads` vector and the `node_map` hashmap.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `id` - `&String` - The id of the post
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `NodeIndex` - The index of the node
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// let post = Post::default();
     /// let idx = threadgraph.add_node(&post.id);
-    /// 
+    ///
     /// assert_eq!(idx.index(), 0);
     /// ```
     fn add_node(&mut self, id: &String) -> NodeIndex {
@@ -68,10 +68,10 @@ impl ThreadGraph {
         }
     }
     /// Adds an edge to the graph
-    /// 
-    /// This function will add an edge from `from_id` to `to_id` if `from_id` exists in the graph. 
+    ///
+    /// This function will add an edge from `from_id` to `to_id` if `from_id` exists in the graph.
     /// If it doesn't exist, it will create a placeholder post and add it to the graph.
-    /// 
+    ///
     /// The reason for the above implementation is due to some of the threads being detached from the main thread.
     pub fn add_post(&mut self, post: Post) {
         // Every id should be unique, use this to update the node_map
@@ -108,20 +108,19 @@ impl ThreadGraph {
         roots_idx
     }
     /// Traverse the graph and return a vector of threads
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Vec<(String, Vec<String>)>` - A vector of tuples where the first element is the root post id and the second element is a vector of pagetext
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// let threads = threadgraph.traverse();
     /// threads[0].0 // root post id
     /// threads[0].1 // vector of pagetext
     /// ```
     pub fn traverse(&self) -> Vec<(String, Vec<String>)> {
-
         let roots = self.show_roots();
         // check for duplicates
         // self.show_roots();
@@ -178,8 +177,8 @@ impl ThreadGraph {
 mod tests {
     use super::*;
     use itertools::izip;
-    use rand::prelude::*;
     use pretty_assertions::assert_eq;
+    use rand::prelude::*;
 
     fn setup() -> (ThreadGraph, Vec<Post>) {
         let test_cases = vec![
@@ -209,7 +208,7 @@ mod tests {
     }
 
     /// Test the basic functionality of the graph
-    /// 
+    ///
     #[test]
     fn test_functional_graph() {
         // TODO: There should be a more idiomatic way to do this
@@ -251,5 +250,4 @@ mod tests {
             }
         }
     }
-
 }

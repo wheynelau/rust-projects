@@ -15,3 +15,5 @@ This module utilizes the `crossbeam` library to send the threads to the `graph` 
 Contains the function `process_graph` that processes objects sent by the iterator.
 */
 pub mod sender;
+
+pub mod graph;

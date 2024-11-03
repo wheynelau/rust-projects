@@ -2,15 +2,15 @@ use crate::globals;
 use crate::utils;
 
 /// Text cleaning function
-/// 
+///
 /// This function is used by the `process` function to clean the text
 ///
 /// # Arguments
 ///
 /// * `text` - A string reference
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `String` - The cleaned text
 ///
 /// # Example
@@ -21,35 +21,34 @@ use crate::utils;
 /// assert_eq!(cleaned_text, "hello world");
 /// ```
 fn clean_text(text: String) -> String {
-
     let cleaned_text = globals::clean_content(&text);
     cleaned_text.trim().to_string()
 }
 /// Process the thread content
-/// 
+///
 /// This function processes the thread content and returns a `ThreadPost` struct
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `thread_id` - `String` - The thread id. This is the root of the thread.
-/// * `content` - `Vec<String>` - The content of the thread. This is the output from the DFS or BFS traversal, 
-/// where each element represents a String that is a content of either a thread or a comment. For more info, check the output of the [traverse](../../graph/struct.ThreadGraph.html#method.traverse) function.
-/// * `forum_name` - `String` - The name of the forum. Used for tagging. 
+/// * `content` - `Vec<String>` - The content of the thread. This is the output from the DFS or BFS traversal,
+///     where each element represents a String that is a content of either a thread or a comment. For more info, check the output of the [traverse](../../graph/struct.ThreadGraph.html#method.traverse) function.
+/// * `forum_name` - `String` - The name of the forum. Used for tagging.
 /// * `use_sentencepiece` - `bool` - Whether to use a tokenizer for counting the number of tokens. If this is set to false,
-/// the function will count the number of words split by whitespace.
-/// 
+///     the function will count the number of words split by whitespace.
+///
 /// # Returns
-/// 
+///
 /// * `ThreadPost` - The processed [ThreadPost](../writer/struct.ThreadPost.html) struct
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// let thread_id = "1234".to_string();
 /// let content = vec!["thread root".to_string(), "comment".to_string()];
 /// let forum_name = "reddit".to_string();
 /// let use_sentencepiece = true;
-/// 
+///
 /// ```
 pub fn process(
     thread_id: String,

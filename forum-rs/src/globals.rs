@@ -3,65 +3,65 @@ use std::sync::OnceLock;
 use tokenizers;
 
 /// Tokenizer object
-/// 
-/// This is a `OnceLock<tokenizers::Tokenizer>` that will be initialized when called with 
+///
+/// This is a `OnceLock<tokenizers::Tokenizer>` that will be initialized when called with
 /// `get_or_init` and a closure that returns a `tokenizers::Tokenizer`
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// pub mod globals;
-/// 
+///
 /// globals::TOKENIZER.get_or_init(|| {
 ///    tokenizers::Tokenizer::from_pretrained("openai-community/gpt2", None).unwrap()
 /// });
-/// 
+///
 /// ```
 static TOKENIZER: OnceLock<tokenizers::Tokenizer> = OnceLock::new();
 
 /// Main regex
-/// 
+///
 /// This contains the main regex to clean the text, this regex is used to clean the text before tokenization
-/// 
+///
 /// ```plaintest
 /// Regex::new(r"-{2,}|={2,}|http\S+|(?:[\w\.-]+)?@\S+|#\S+|\s{2,}")
 /// ```
-/// 
+///
 /// The above regex will remove the following:
-/// 
+///
 /// 1. More than 2 dashes
 /// 2. More than 2 equal signs
 /// 3. URLs
 /// 4. Email addresses and @names
 /// 5. Hashtags
-/// 
+///
 /// # Usage
-/// 
+///
 /// As this is a private static variable, it is not accessible. Instead, use the public function `clean_content`
 /// and call `init_regex` at the beginning of the program. If necessary, the regex can be modified in `src/globals.rs`
-/// 
+///
 /// # Example
-/// 
+///
 /// Refer to the `clean_content` function
 /// [clean_content](fn.clean_content.html)
 static MAIN_REGEX: OnceLock<regex::Regex> = OnceLock::new();
 
 /// Secondary regex
-/// 
-/// This regex is used to clean the text after the first regex has been applied. Due to the regex replacing with 
+///
+/// This regex is used to clean the text after the first regex has been applied. Due to the regex replacing with
 /// spaces, there may be extra spaces that need to be removed
-/// 
+///
 /// ```plaintext
 /// regex::Regex::new(r"\s+")
 /// ```
-/// 
+///
 /// # Usage
-/// 
+///
 /// As this is a private static variable, it is not accessible. Instead, use the public function `clean_content`
 /// and call `init_regex` at the beginning of the program. If necessary, the regex can be modified in `src/globals.rs`
-/// 
+///
 /// # Example
-/// 
+///
 /// Refer to the `clean_content` function
 /// [clean_content](fn.clean_content.html)
 static SPACE_REGEX: OnceLock<regex::Regex> = OnceLock::new();
@@ -79,38 +79,37 @@ static SPACE_REGEX: OnceLock<regex::Regex> = OnceLock::new();
 ///
 /// ```
 pub fn init_regex() {
-    MAIN_REGEX.get_or_init(|| {
-        regex::Regex::new(r"-{2,}|={2,}|http\S+|(?:[\w\.-]+)?@\S+|#\S+").unwrap()
-    });
+    MAIN_REGEX
+        .get_or_init(|| regex::Regex::new(r"-{2,}|={2,}|http\S+|(?:[\w\.-]+)?@\S+|#\S+").unwrap());
     SPACE_REGEX.get_or_init(|| regex::Regex::new(r"\s+").unwrap());
 }
 
 /// Apply the regex to the content
-/// 
+///
 /// This function will apply the regex to the content and return the cleaned content
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `content` - `&str` - The content to clean
-/// 
+///
 /// # Returns
-/// 
+///
 /// * `String` - The cleaned content
-/// 
+///
 /// # Example
-/// 
+///
 /// ```
 /// pub mod globals;
-/// 
+///
 /// globals::init_regex();
 /// let content = "Hello world";
-/// 
+///
 /// let cleaned_content = globals::clean_content(content);
-/// 
+///
 /// ```
-/// 
+///
 /// # Panics
-/// 
+///
 /// This function will panic if the regex has not been initialized
 pub fn clean_content(content: &str) -> String {
     let cleaned_text = MAIN_REGEX
@@ -188,7 +187,6 @@ pub fn tokenize(content: &str) -> tokenizers::Encoding {
         .unwrap()
 }
 
-
 #[cfg(test)]
 mod tokenizer_tests {
     use super::*;
@@ -208,14 +206,13 @@ mod tokenizer_tests {
 
     #[test]
     fn test_tokenizer() {
-
         init_tokenizer(&"openai-community/gpt2".to_string());
         let encoding = tokenize("Hello world");
         assert!(!encoding.get_tokens().is_empty());
     }
 
     #[test]
-    #[should_panic (expected = "Tokenizer has not been initialized")]
+    #[should_panic(expected = "Tokenizer has not been initialized")]
     fn test_panic() {
         // Try to get the tokenizer without initializing it
         tokenize("Hello world");
@@ -226,5 +223,4 @@ mod tokenizer_tests {
     fn test_invalid_huggingface_name() {
         init_tokenizer(&"no_such_model".to_string());
     }
-
 }
