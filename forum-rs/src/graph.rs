@@ -137,10 +137,9 @@ impl ThreadGraph {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::prelude::*;
     use itertools::izip;
+    use rand::prelude::*;
 
-    #[allow(dead_code)]
     fn setup() -> (ThreadGraph, Vec<Post>) {
         let test_cases = vec![
             // first graph, basic 1>2&3
@@ -155,14 +154,16 @@ mod tests {
             ("9", false, "9", "7", "7"),
             ("10", false, "10", "8", "8"),
             // detached thread
-            ("11", false, "11","12","12")
+            ("11", false, "11", "12", "12"),
         ];
 
         let graph = ThreadGraph::new();
-        let posts = test_cases.into_iter()
+        let posts = test_cases
+            .into_iter()
             .map(|(id, is_thread, pagetext, parent_post_id, root_post_id)| {
-            Post::new(id, is_thread, pagetext, parent_post_id, root_post_id)
-        }).collect();
+                Post::new(id, is_thread, pagetext, parent_post_id, root_post_id)
+            })
+            .collect();
         (graph, posts)
     }
     #[test]
@@ -170,14 +171,14 @@ mod tests {
         // TODO: There should be a more idiomatic way to do this
         // assumes dfs
         let mut target: Vec<(&str, Vec<&str>)> = vec![
-            ("2",vec!["2","7","9","8","10"],),
-            ("1",vec!["1","3","5","4","6"],),
-            ("12",vec!["","11"],),
+            ("2", vec!["2", "7", "9", "8", "10"]),
+            ("1", vec!["1", "3", "5", "4", "6"]),
+            ("12", vec!["", "11"]),
         ];
         let mut alternative_target: Vec<(&str, Vec<&str>)> = vec![
-            ("2",vec!["2","7","8","10","9"],),
-            ("1",vec!["1","3","4","6","5"],),
-            ("12",vec!["11",""],),
+            ("2", vec!["2", "7", "8", "10", "9"]),
+            ("1", vec!["1", "3", "4", "6", "5"]),
+            ("12", vec!["11", ""]),
         ];
         // sort target
         target.sort_by(|a, b| a.0.cmp(&b.0));
@@ -185,7 +186,6 @@ mod tests {
 
         // run a loop for better determinism
         for _ in 0..10 {
-
             let (mut graph, mut posts) = setup();
             posts.shuffle(&mut thread_rng());
             let mut comments = Vec::new();
@@ -219,6 +219,6 @@ mod tests {
                 assert_eq!(result.0, x.0);
                 assert!(result.1 == x.1 || result.1 == y.1);
             }
-    }
+        }
     }
 }

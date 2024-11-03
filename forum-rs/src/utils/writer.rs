@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 // **1 = B
 // **2 = KB
 // **3 = MB
-const MAX_BYTES_PER_FILE: usize = 100 * 1024_usize.pow(3);
+const MAX_BYTES_PER_FILE: usize = 100 * 1024_usize.pow(2);
 
 /// Enum for serialization
-#[derive(Serialize)]
+#[derive(Serialize, Clone, Default)]
 pub struct ThreadPost {
     pub length: usize,
     pub raw_content: String,
@@ -18,13 +18,17 @@ pub struct ThreadPost {
     pub source: String,
 }
 
+fn get_chunk_size(bytes: usize, data: &Vec<ThreadPost>) -> usize {
+    let num_files = bytes.div_ceil(MAX_BYTES_PER_FILE);
+    let num_splits = (num_files as usize).max(1);
+    data.len().div_ceil(num_splits)
+}
+
 /// Writes a vector of ThreadPost to a JSONL file
 pub fn write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
     // Trying to implement rayon
     // Note that the size of the input should be checked before entering here
-    let splits_f64 = bytes.div_ceil(MAX_BYTES_PER_FILE);
-    let num_splits = (splits_f64 as usize).max(1);
-    let chunk_size = data.len().div_ceil(num_splits);
+    let chunk_size = get_chunk_size(bytes, &data);
 
     let folder = file_path.parent().unwrap().to_str().unwrap();
     let stem = file_path.file_stem().unwrap().to_str().unwrap();
@@ -56,5 +60,21 @@ pub fn write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> s
                 }
             });
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_get_chunk_size() {
+        let post = ThreadPost::default();
+        // repeat 1000 for data
+        let data: Vec<ThreadPost> = vec![post; 1000];
+        // Total size 300MB
+        let bytes = 300 * 1024_usize.pow(2);
+        let chunk_size = super::get_chunk_size(bytes, &data);
+        // 1000 / 3 ceil = 334
+        assert_eq!(chunk_size, 334);
     }
 }

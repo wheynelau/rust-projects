@@ -52,6 +52,14 @@ pub fn single_folder(folder: &str) -> Vec<PathBuf> {
         .unwrap()
 }
 
+/// Get the size of a folder
+/// Does not handle recursion
+///
+/// # Example
+///
+/// ```
+/// let size = folder_size(&PathBuf::from("forum_folder")).unwrap();
+/// ```
 fn folder_size(folder: &PathBuf) -> Result<u64, io::Error> {
     let mut size: u64 = 0;
 
