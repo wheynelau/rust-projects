@@ -4,6 +4,11 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
+// **1 = B
+// **2 = KB
+// **3 = MB
+const MAX_BYTES_PER_FILE: usize = 100 * 1024_usize.pow(3);
+
 /// Enum for serialization
 #[derive(Serialize)]
 pub struct ThreadPost {
@@ -14,10 +19,12 @@ pub struct ThreadPost {
 }
 
 /// Writes a vector of ThreadPost to a JSONL file
-pub fn write_jsonl(data: Vec<ThreadPost>, file_path: PathBuf) -> std::io::Result<()> {
+pub fn write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
     // Trying to implement rayon
     // Note that the size of the input should be checked before entering here
-    let chunk_size: usize = 50000;
+    let splits_f64 = bytes.div_ceil(MAX_BYTES_PER_FILE);
+    let num_splits = (splits_f64 as usize).max(1);
+    let chunk_size = data.len().div_ceil(num_splits);
 
     let folder = file_path.parent().unwrap().to_str().unwrap();
     let stem = file_path.file_stem().unwrap().to_str().unwrap();

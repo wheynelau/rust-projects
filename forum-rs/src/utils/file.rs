@@ -51,3 +51,35 @@ pub fn single_folder(folder: &str) -> Vec<PathBuf> {
         .collect::<Result<Vec<_>, io::Error>>()
         .unwrap()
 }
+
+fn folder_size(folder: &PathBuf) -> Result<u64, io::Error> {
+    let mut size: u64 = 0;
+
+    for entry in fs::read_dir(folder)? {
+        let entry = entry?;
+        let path = entry.path();
+        let metadata = fs::metadata(&path)?;
+
+        if metadata.is_file() {
+            size += metadata.len();
+        } else if metadata.is_dir() {
+            panic!("There should not be any subfolders in the main folder");
+        }
+    }
+
+    Ok(size)
+}
+///
+/// Sort by largest first
+///
+pub fn reorder_by_size(mut folder: Vec<PathBuf>) -> Vec<PathBuf> {
+    folder.sort_by_cached_key(|path| {
+        // Use a default size of 0 if there's an error calculating the folder size
+        folder_size(path).unwrap_or(0)
+    });
+
+    // Reverse to get largest first
+    folder.reverse();
+
+    folder
+}

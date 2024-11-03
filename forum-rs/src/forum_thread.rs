@@ -18,6 +18,22 @@ pub struct Post {
 }
 
 impl Post {
+    pub fn new<I: Into<String>>(
+        id: I,
+        is_thread: bool,
+        pagetext: I,
+        parent_post_id: I,
+        root_post_id: I,
+    ) -> Self {
+        Post {
+            id: id.into(),
+            is_thread,
+            pagetext: pagetext.into(),
+            parent_post_id: parent_post_id.into(),
+            root_post_id: root_post_id.into(),
+        }
+    }
+
     pub fn placeholder(id: String) -> Self {
         Post {
             id: id.clone(),

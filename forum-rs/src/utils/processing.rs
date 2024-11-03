@@ -1,7 +1,6 @@
 use crate::globals;
 use crate::utils;
 
-use rayon::prelude::*;
 /// Text cleaning function, can be changed.
 ///
 /// Note that RE is static and should be changed above
@@ -29,10 +28,10 @@ pub fn process(
     use_sentencepiece: bool,
 ) -> utils::writer::ThreadPost {
     let content: Vec<String> = content
-    .into_par_iter()
-    .with_min_len(100)
-    .map(clean_text)
-    .collect();
+        .into_iter()
+        // .with_min_len(1000)
+        .map(clean_text)
+        .collect();
     let content = content.join("\n");
     let length: usize = match use_sentencepiece {
         true => globals::TOKENIZER

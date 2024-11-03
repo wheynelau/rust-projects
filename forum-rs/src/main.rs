@@ -1,19 +1,25 @@
 use clap::Parser;
 use rayon::prelude::*;
 use std::fs::{self};
-use std::io::{self, BufRead, BufReader};
+use std::io::{self, BufRead, BufReader, Write};
 use std::{
     fs::File,
     path::{Path, PathBuf},
-    sync::{atomic::AtomicUsize, Arc},
+    sync::{
+        atomic::{AtomicBool, AtomicUsize, Ordering},
+        Arc,
+    },
 };
 
+use std::time::{Duration, Instant};
 pub mod args;
+pub mod experimental;
+pub mod forum_thread;
 pub mod globals;
 pub mod graph;
-pub mod thread;
 pub mod utils;
 
+use graph::ThreadGraph;
 use utils::writer::ThreadPost;
 
 /// Creates a Vector of BTreeMap for the JSONL file
@@ -22,55 +28,111 @@ fn create_thread_posts(
     threads: Vec<(String, Vec<String>)>,
     use_sentencepiece: bool,
     forum_name: String,
-) -> Vec<ThreadPost> {
-    // forum_id is not used, but just for compatibility
+) -> (Vec<ThreadPost>, usize) {
+    let byte_counter = AtomicUsize::new(0);
+    let posts = if threads.len() > 5000 {
+        // Parallel processing for large number of threads
+        let mut posts: Vec<ThreadPost> = Vec::with_capacity(threads.len());
+        threads
+            .par_iter()
+            .map(|(thread_id, content)| {
+                let threadpost = utils::processing::process(
+                    thread_id.to_string(),
+                    content.to_vec(),
+                    forum_name.to_string(),
+                    use_sentencepiece,
+                );
+                byte_counter.fetch_add(threadpost.raw_content.len(), Ordering::Relaxed);
+                threadpost
+            })
+            .collect_into_vec(&mut posts);
+        posts
+    } else {
+        // Sequential processing for smaller number of threads
+        let posts: Vec<ThreadPost> = threads
+            .iter()
+            .map(|(thread_id, content)| {
+                let threadpost = utils::processing::process(
+                    thread_id.to_string(),
+                    content.to_vec(),
+                    forum_name.to_string(),
+                    use_sentencepiece,
+                );
+                byte_counter.fetch_add(threadpost.raw_content.len(), Ordering::Relaxed);
+                threadpost
+            })
+            .collect();
+        posts
+    };
 
-    // allocation takes time, so we only par_iter if size > 100
-    threads
-        .par_iter()
-        .with_min_len(100)
-        .map(|(thread_id, content)| {
-            utils::processing::process(
-                thread_id.to_string(),
-                content.to_vec(),
-                forum_name.to_string(),
-                use_sentencepiece,
-            )
-        })
-        .collect()
+    (posts, byte_counter.into_inner())
 }
-///
-/// Handles one folder at a time
-///
+
+#[allow(dead_code)]
 fn get_threads(path: &str) -> Vec<(String, Vec<String>)> {
     let entries = utils::file::single_folder(path);
-    let mut threadgraph = graph::ThreadGraph::new();
-    let mut comments: Vec<thread::Post> = Vec::with_capacity(10000);
+    let mut threadgraph = ThreadGraph::new();
+    let mut comments: Vec<forum_thread::Post> = Vec::with_capacity(10000);
+
+    // let loop_start = std::time::Instant::now();
     // this shouldn't be parallelized for safety
-    for entry in entries.iter() {
+    entries.iter().for_each(|entry| {
         let fp = File::open(entry).unwrap();
-
         let reader = BufReader::new(fp);
+        let threads: Vec<forum_thread::Post> = reader
+            .lines()
+            .par_bridge()
+            .filter_map(|line| line.ok())
+            .filter_map(|line| {
+                serde_json::from_str::<forum_thread::JsonStruct>(&line)
+                    .ok()
+                    .and_then(forum_thread::Post::from_json_struct)
+            })
+            .collect();
 
-        reader.lines().for_each(|line| {
-            if let Ok(line) = line {
-                let json: thread::JsonStruct = serde_json::from_str(&line).unwrap();
-                if let Some(thread) = thread::Post::from_json_struct(json) {
-                    let thread_node = threadgraph.add_node(thread.clone());
-                    if thread.is_thread {
-                        threadgraph.add_threads(thread_node);
-                    } else {
-                        comments.push(thread);
-                    };
-                }
+        for thread in threads {
+            let thread_node = threadgraph.add_node(thread.clone());
+            match thread.is_thread {
+                true => threadgraph.add_threads(thread_node),
+                false => comments.push(thread),
             }
-        });
-    }
+        }
+    });
+
+    //println!("Time taken for loop: {:.2?}", loop_start.elapsed());
     // add edges
+    // let comments = comments.lock().unwrap();
+    // let mut threadgraph = threadgraph.lock().unwrap();
+    // let comment_time = std::time::Instant::now();
     for comment in comments.iter() {
         threadgraph.add_edge(&comment.parent_post_id, &comment.id);
     }
-    threadgraph.tranverse()
+    // println!("Time taken for comments: {:.2?}", comment_time.elapsed());
+    // let traverse_time = std::time::Instant::now();
+    threadgraph.traverse()
+    // println!("Time taken for traverse: {:.2?}", traverse_time.elapsed());
+    // threads
+}
+
+fn process_folder(
+    folder: &PathBuf,
+    out_folder: &String,
+    use_sentencepiece: &bool,
+    source: &String,
+) {
+    // dbg!(&folder);
+    let folder = folder.to_str().unwrap();
+    let forum_id = folder.split('/').last().unwrap();
+
+    let threads: Vec<(String, Vec<String>)> = experimental::sender::get_threads(folder);
+
+    let (posts, bytes) =
+        create_thread_posts(forum_id, threads, *use_sentencepiece, source.to_string());
+
+    if !posts.is_empty() {
+        let output_file: PathBuf = Path::new(&out_folder).join(format!("{}.jsonl", forum_id));
+        utils::writer::write_jsonl(posts, bytes, output_file).unwrap();
+    }
 }
 
 fn main() {
@@ -86,9 +148,6 @@ fn main() {
     }
     // For safety, the output folder is not created if not found
     // Also if not empty, it will panic.
-
-    let start_time = std::time::Instant::now();
-
     if !args.safe {
         fs::create_dir_all(&out_folder).expect("Unable to create dir");
         println!("Folder has been created at `{}`", &out_folder)
@@ -106,42 +165,48 @@ fn main() {
     // let folder = "reddit-graph/test_main_folder/";
     // let out_folder : &str = "./output/";
     let all_folders: Vec<PathBuf> = utils::file::all_folders(&folder).unwrap();
+
+    // Reorder the largest size first
+    // This should speed up the parallel processing
+    // let all_folders = utils::file::reorder_by_size(all_folders);
     let total_folders = all_folders.len();
 
+    // Before the par_iter loop:
     let counter = Arc::new(AtomicUsize::new(0));
-    all_folders.iter().for_each(|folder| {
-        let folder = folder.to_str().unwrap();
-        let forum_id = folder.split('/').last().unwrap();
-        // time taken for threads
-        let thread_start_time = std::time::Instant::now();
-        let threads: Vec<(String, Vec<String>)> = get_threads(folder);
-        let thread_duration = thread_start_time.elapsed();
-        println!("Time taken for threads: {:.2?}", thread_duration);
-
-        let posts_start_time = std::time::Instant::now();
-        let posts: Vec<ThreadPost> =
-            create_thread_posts(forum_id, threads, use_sentencepiece, source.clone());
-        let posts_duration = posts_start_time.elapsed();
-        println!("Time taken for posts: {:.2?}", posts_duration);
-
-        if !posts.is_empty() {
-            let write_start_time = std::time::Instant::now();
-            let output_file: PathBuf = Path::new(&out_folder).join(format!("{}.jsonl", forum_id));
-            utils::writer::write_jsonl(posts, output_file).unwrap();
-            let write_duration = write_start_time.elapsed();
-            println!("Time taken for writing: {:.2?}", write_duration);
+    let running = Arc::new(AtomicBool::new(true));
+    let running_clone = running.clone();
+    let counter_clone = counter.clone();
+    let start_time_clone = Instant::now();
+    // Spawn progress display thread
+    let progress_thread = std::thread::spawn(move || {
+        while running_clone.load(Ordering::SeqCst) {
+            let count = counter_clone.load(Ordering::SeqCst);
+            print!(
+                "\rProcessed {}/{} folders. Current duration: {:.2}s",
+                count,
+                total_folders,
+                start_time_clone.elapsed().as_secs()
+            );
+            std::io::stdout().flush().unwrap();
+            std::thread::sleep(Duration::from_millis(100));
         }
-
-        let count = counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        print!(
+        // One final update after completion
+        let count = counter_clone.load(Ordering::SeqCst);
+        println!(
             "\rProcessed {}/{} folders. Current duration: {:.2}s",
             count,
             total_folders,
-            start_time.elapsed().as_secs()
+            start_time_clone.elapsed().as_secs()
         );
     });
 
-    println!("\nAll done! Time taken: {:.3?}", start_time.elapsed());
+    all_folders.par_iter().for_each(|folder| {
+        process_folder(&folder, &out_folder, &use_sentencepiece, &source);
+        counter.fetch_add(1, Ordering::SeqCst);
+    });
+    // After the loop completes, stop the progress thread
+    running.store(false, Ordering::SeqCst);
+    progress_thread.join().unwrap();
 }
 #[cfg(test)]
 mod tests {
@@ -167,11 +232,5 @@ mod tests {
         let new_file = format!("{}/{}_new.{}", folder, stem, extension);
         assert_eq!(new_file, "forum_folder/output/something_new.jsonl");
     }
-    // #[test]
-    // fn test_functional() {
-    //     /// This needs to have a folder with the test file
-    //     let file = "test_data/randomized_data.jsonl";
-    //     // check if file exists
 
-    // }
 }
