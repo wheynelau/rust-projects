@@ -41,7 +41,7 @@ pub mod args;
 
 # Module for the experimental functions
 
-This module containes functions that may not produce the best performance but are experimental
+This module contains functions that may not produce the best performance but are experimental
 */
 pub mod experimental;
 pub mod forum_thread;
@@ -100,13 +100,15 @@ fn process_folder(folder: &Path, out_folder: &String, use_sentencepiece: &bool, 
     let create_posts_time = start.elapsed().as_secs();
     TOTAL_TIME_CREATE_POSTS.fetch_add(create_posts_time, Ordering::SeqCst);
 
-    let start = Instant::now();
+    
     if !posts.is_empty() {
+        let start = Instant::now();
         let output_file: PathBuf = Path::new(&out_folder).join(format!("{}.jsonl", forum_id));
         utils::writer::write_jsonl(posts, bytes, output_file).unwrap();
+        let write_jsonl_time = start.elapsed().as_secs();
+        TOTAL_TIME_WRITE_JSONL.fetch_add(write_jsonl_time, Ordering::SeqCst);
     }
-    let write_jsonl_time = start.elapsed().as_secs();
-    TOTAL_TIME_WRITE_JSONL.fetch_add(write_jsonl_time, Ordering::SeqCst);
+    
 }
 ///
 /// Entry point of the program
@@ -223,6 +225,7 @@ fn main() {
     running.store(false, Ordering::SeqCst);
     progress_thread.join().unwrap();
 
+    println!();
     let num_threads: u64= rayon::current_num_threads() as u64;
     println!(
         "Total time taken for get_threads: {:.2}s",
