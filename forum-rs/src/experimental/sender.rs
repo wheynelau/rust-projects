@@ -58,8 +58,6 @@ for line in reader.lines() {
 drop(post_tx);
 
 ```
-
-
 */
 fn process_graph(rx: Receiver<forum_thread::Post>) -> experimental::graph::ThreadGraph {
     let mut threadgraph = experimental::graph::ThreadGraph::new();

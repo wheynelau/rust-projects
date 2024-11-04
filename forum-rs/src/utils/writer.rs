@@ -1,3 +1,4 @@
+use crossbeam_channel::Receiver;
 use rayon::prelude::*;
 use serde::Serialize;
 use std::fs::File;
@@ -25,7 +26,11 @@ fn get_chunk_size(bytes: usize, data: &[ThreadPost]) -> usize {
 }
 
 /// Writes a vector of ThreadPost to a JSONL file
-pub fn _write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
+pub fn _write_jsonl(
+    data: Vec<ThreadPost>,
+    bytes: usize,
+    file_path: PathBuf,
+) -> std::io::Result<()> {
     // Trying to implement rayon
     // Note that the size of the input should be checked before entering here
     let chunk_size = get_chunk_size(bytes, &data);
@@ -64,8 +69,6 @@ pub fn _write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> 
 }
 
 pub fn write_jsonl(data: Vec<String>, _bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
-
-
     let folder = file_path.parent().unwrap().to_str().unwrap();
     let stem = file_path.file_stem().unwrap().to_str().unwrap();
     let extension = file_path.extension().unwrap().to_str().unwrap();
@@ -81,6 +84,21 @@ pub fn write_jsonl(data: Vec<String>, _bytes: usize, file_path: PathBuf) -> std:
         }
     });
     handle.join().unwrap();
+    Ok(())
+}
+
+pub fn write_jsonl_receiver(
+    receiver: Receiver<String>,
+    output_folder: PathBuf,
+) -> std::io::Result<()> {
+    // Create a all.jsonl file
+    let output_path = output_folder.join("all.jsonl");
+    let mut writer = BufWriter::with_capacity(1_048_576, File::create(output_path)?);
+    while let Ok(data) = receiver.recv() {
+        writeln!(&mut writer, "{}", data)?;
+    }
+    writer.flush()?;
+    println!("Finished writing to all.jsonl");
     Ok(())
 }
 

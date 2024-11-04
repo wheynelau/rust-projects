@@ -1,13 +1,14 @@
 #![doc = include_str!("../README.md")]
 
 use clap::Parser;
+use crossbeam_channel::{unbounded, Sender};
 use rayon::prelude::*;
 use std::fs::{self};
 use std::io::Write;
 use std::{
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering, AtomicU64},
+        atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering},
         Arc,
     },
 };
@@ -80,10 +81,14 @@ static TOTAL_TIME_WRITE_JSONL: AtomicU64 = AtomicU64::new(0);
 /// process_folder(folder, &out_folder, &use_sentencepiece, &source);
 ///
 /// ```
-fn process_folder(folder: &Path, out_folder: &String, use_sentencepiece: &bool, source: &String) {
+fn process_folder(
+    folder: &Path,
+    use_sentencepiece: &bool,
+    source: &String,
+    post_rx: Sender<String>,
+) {
     // dbg!(&folder);
     let folder = folder.to_str().unwrap();
-    let forum_id = folder.split('/').last().unwrap();
 
     let start = Instant::now();
     let threads: Vec<(String, Vec<String>)> = experimental::sender::get_threads(folder);
@@ -91,24 +96,17 @@ fn process_folder(folder: &Path, out_folder: &String, use_sentencepiece: &bool, 
     TOTAL_TIME_GET_THREADS.fetch_add(get_threads_time, Ordering::SeqCst);
 
     let start = Instant::now();
-    let (posts, bytes) = forum_thread::create_thread_posts(
-        forum_id,
-        threads,
-        *use_sentencepiece,
-        source.to_string(),
-    );
+    forum_thread::sender_thread_posts(threads, *use_sentencepiece, source.to_string(), post_rx);
     let create_posts_time = start.elapsed().as_secs();
     TOTAL_TIME_CREATE_POSTS.fetch_add(create_posts_time, Ordering::SeqCst);
 
-    
-    if !posts.is_empty() {
-        let start = Instant::now();
-        let output_file: PathBuf = Path::new(&out_folder).join(format!("{}.jsonl", forum_id));
-        utils::writer::write_jsonl(posts, bytes, output_file).unwrap();
-        let write_jsonl_time = start.elapsed().as_secs();
-        TOTAL_TIME_WRITE_JSONL.fetch_add(write_jsonl_time, Ordering::SeqCst);
-    }
-    
+    // if !posts.is_empty() {
+    //     let start = Instant::now();
+    //     let output_file: PathBuf = Path::new(&out_folder).join(format!("{}.jsonl", forum_id));
+    //     utils::writer::write_jsonl(posts, bytes, output_file).unwrap();
+    //     let write_jsonl_time = start.elapsed().as_secs();
+    //     TOTAL_TIME_WRITE_JSONL.fetch_add(write_jsonl_time, Ordering::SeqCst);
+    // }
 }
 ///
 /// Entry point of the program
@@ -147,7 +145,7 @@ fn process_folder(folder: &Path, out_folder: &String, use_sentencepiece: &bool, 
 /// ├── sub1.jsonl
 /// └── sub2.jsonl
 /// ```
-fn main() {
+fn main() -> std::io::Result<()> {
     let args = args::Cli::parse();
     let folder: String = args.input;
     let out_folder: String = args.output;
@@ -183,7 +181,7 @@ fn main() {
 
     // Reorder the largest size first
     // This should speed up the parallel processing
-    // let all_folders = utils::file::reorder_by_size(all_folders);
+    let all_folders = utils::file::reorder_by_size(all_folders);
     let total_folders = all_folders.len();
 
     // Before the par_iter loop:
@@ -192,14 +190,18 @@ fn main() {
     let running_clone = running.clone();
     let counter_clone = counter.clone();
     let start_time_clone = Instant::now();
+
+    let (data_tx, data_rx) = unbounded();
+    let data_rx_clone = data_rx.clone();
     // Spawn progress display thread
     let progress_thread = std::thread::spawn(move || {
         while running_clone.load(Ordering::SeqCst) {
             let count = counter_clone.load(Ordering::SeqCst);
             print!(
-                "\rProcessed {}/{} folders. Current duration: {:2}m {:.2}s",
+                "\rProcessed {}/{} folders. Queue to write: {}. Current duration: {:2}m {:.2}s",
                 count,
                 total_folders,
+                data_rx_clone.len(),
                 start_time_clone.elapsed().as_secs() / 60,
                 start_time_clone.elapsed().as_secs() % 60
             );
@@ -208,25 +210,36 @@ fn main() {
         }
         // One final update after completion
         let count = counter_clone.load(Ordering::SeqCst);
-        print!(
-            "\rProcessed {}/{} folders. Current duration: {:2}m {:.2}s",
+        println!(
+            "\rProcessed {}/{} folders. Queue to write: {}.  Current duration: {:2}m {:.2}s",
             count,
             total_folders,
+            data_rx_clone.len(),
             start_time_clone.elapsed().as_secs() / 60,
             start_time_clone.elapsed().as_secs() % 60
         );
     });
 
+    rayon::spawn(move || {
+        if let Err(e) = utils::writer::write_jsonl_receiver(data_rx, out_folder.into()) {
+            eprintln!("Error writing JSONL: {}", e);
+        }
+    });
     all_folders.par_iter().for_each(|folder| {
-        process_folder(folder, &out_folder, &use_sentencepiece, &source);
+        process_folder(folder, &use_sentencepiece, &source, data_tx.clone());
         counter.fetch_add(1, Ordering::SeqCst);
     });
+    println!("Sent all data");
+    drop(data_tx);
+    // Wait for the receiver to finish
+    println!("Completed processing all folders");
+
     // After the loop completes, stop the progress thread
     running.store(false, Ordering::SeqCst);
     progress_thread.join().unwrap();
 
     println!();
-    let num_threads: u64= rayon::current_num_threads() as u64;
+    let num_threads: u64 = rayon::current_num_threads() as u64;
     println!(
         "Total time taken for get_threads: {:.2}s",
         TOTAL_TIME_GET_THREADS.load(Ordering::SeqCst) / num_threads
@@ -239,6 +252,8 @@ fn main() {
         "Total time taken for write_jsonl: {:.2}s",
         TOTAL_TIME_WRITE_JSONL.load(Ordering::SeqCst) / num_threads
     );
+
+    Ok(())
 }
 #[cfg(test)]
 mod main_tests {
