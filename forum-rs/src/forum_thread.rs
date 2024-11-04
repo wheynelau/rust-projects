@@ -67,11 +67,11 @@ pub fn create_thread_posts(
     threads: Vec<(String, Vec<String>)>,
     use_sentencepiece: bool,
     forum_name: String,
-) -> (Vec<utils::writer::ThreadPost>, usize) {
+) -> (Vec<String>, usize) {
     let byte_counter = AtomicUsize::new(0);
     let posts = if threads.len() > 5000 {
         // Parallel processing for large number of threads
-        let mut posts: Vec<utils::writer::ThreadPost> = Vec::with_capacity(threads.len());
+        let mut posts: Vec<String> = Vec::with_capacity(threads.len());
         threads
             .par_iter()
             .map(|(thread_id, content)| {
@@ -82,13 +82,13 @@ pub fn create_thread_posts(
                     use_sentencepiece,
                 );
                 byte_counter.fetch_add(threadpost.raw_content.len(), Ordering::Relaxed);
-                threadpost
+                serde_json::to_string(&threadpost).unwrap()
             })
             .collect_into_vec(&mut posts);
         posts
     } else {
         // Sequential processing for smaller number of threads
-        let posts: Vec<utils::writer::ThreadPost> = threads
+        let posts: Vec<String> = threads
             .iter()
             .map(|(thread_id, content)| {
                 let threadpost = utils::processing::process(
@@ -98,7 +98,7 @@ pub fn create_thread_posts(
                     use_sentencepiece,
                 );
                 byte_counter.fetch_add(threadpost.raw_content.len(), Ordering::Relaxed);
-                threadpost
+                serde_json::to_string(&threadpost).unwrap()
             })
             .collect();
         posts

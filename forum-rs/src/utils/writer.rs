@@ -63,7 +63,7 @@ pub fn _write_jsonl(data: Vec<ThreadPost>, bytes: usize, file_path: PathBuf) -> 
     }
 }
 
-pub fn write_jsonl(data: Vec<ThreadPost>, _bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
+pub fn write_jsonl(data: Vec<String>, _bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
 
 
     let folder = file_path.parent().unwrap().to_str().unwrap();
@@ -75,8 +75,8 @@ pub fn write_jsonl(data: Vec<ThreadPost>, _bytes: usize, file_path: PathBuf) -> 
     let handle = std::thread::spawn(move || {
         let mut writer = BufWriter::new(file);
 
-        for hashmap in data {
-            let json_line = serde_json::to_string(&hashmap).unwrap();
+        for json_line in data {
+            // let json_line = serde_json::to_string(&hashmap).unwrap();
             writeln!(&mut writer, "{}", json_line).unwrap();
         }
     });
