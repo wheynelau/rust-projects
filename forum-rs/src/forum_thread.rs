@@ -67,33 +67,20 @@ pub fn sender_thread_posts(
     forum_name: String,
     sender_rx: crossbeam_channel::Sender<String>,
 ) {
-    if threads.len() > 5000 {
-        // Parallel processing for large number of threads
-        threads.par_iter().for_each(|(thread_id, content)| {
-            let threadpost = utils::processing::process(
-                thread_id.to_string(),
-                content.to_vec(),
-                forum_name.to_string(),
-                use_sentencepiece,
-            );
-            sender_rx
-                .send(serde_json::to_string(&threadpost).unwrap())
-                .unwrap();
+    // Parallel processing for large number of threads
+    threads.par_iter()
+    .with_min_len(50)
+    .for_each(|(thread_id, content)| {
+        let threadpost = utils::processing::process(
+            thread_id.to_string(),
+            content.to_vec(),
+            forum_name.to_string(),
+            use_sentencepiece,
+        );
+        sender_rx
+            .send(serde_json::to_string(&threadpost).unwrap())
+            .unwrap();
         });
-    } else {
-        // Sequential processing for smaller number of threads
-        threads.iter().for_each(|(thread_id, content)| {
-            let threadpost = utils::processing::process(
-                thread_id.to_string(),
-                content.to_vec(),
-                forum_name.to_string(),
-                use_sentencepiece,
-            );
-            sender_rx
-                .send(serde_json::to_string(&threadpost).unwrap())
-                .unwrap();
-        })
-    };
 }
 
 /// Creates a Vector of BTreeMap for the JSONL file

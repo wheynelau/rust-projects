@@ -219,7 +219,6 @@ fn main() -> std::io::Result<()> {
             start_time_clone.elapsed().as_secs() % 60
         );
     });
-
     rayon::spawn(move || {
         if let Err(e) = utils::writer::write_jsonl_receiver(data_rx, out_folder.into()) {
             eprintln!("Error writing JSONL: {}", e);
@@ -229,7 +228,6 @@ fn main() -> std::io::Result<()> {
         process_folder(folder, &use_sentencepiece, &source, data_tx.clone());
         counter.fetch_add(1, Ordering::SeqCst);
     });
-    println!("Sent all data");
     drop(data_tx);
     // Wait for the receiver to finish
     println!("Completed processing all folders");
@@ -272,10 +270,15 @@ mod main_tests {
     }
 
     #[test]
-    fn test_integration() {
+    fn test_threads_integration() {
         // this needs to have a folder with jsonl files
+        let folder = "test_data/forum_276";
+        // Skip test if file is not found
+        if !Path::new(folder).exists() {
+            return;
+        }
         globals::init_regex();
-        let folder = String::from("test_data/forum_276");
+        let folder = String::from(folder);
         let threads: Vec<(String, Vec<String>)> = experimental::parallel::get_threads(&folder);
         let previous_implementation = experimental::parallel::_get_threads(&folder);
         let sender_threads: Vec<(String, Vec<String>)> = experimental::sender::get_threads(&folder);
