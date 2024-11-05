@@ -77,9 +77,25 @@ fn folder_size(folder: &PathBuf) -> Result<u64, io::Error> {
 
     Ok(size)
 }
-///
 /// Sort by largest first
 ///
+/// This takes a vector of paths and sorts them by size, largest first.
+/// It does not handle recursion for the inner folders.
+/// 
+/// # Arguments
+/// 
+/// * `folder` - `Vec<PathBuf>` - The folder to sort
+/// 
+/// # Returns
+/// 
+/// * `Vec<PathBuf>` - The sorted folder
+/// 
+/// 
+/// # Example
+/// 
+/// ```
+/// let sorted_folder = reorder_by_size(folder);
+/// ```
 pub fn reorder_by_size(mut folder: Vec<PathBuf>) -> Vec<PathBuf> {
     folder.sort_by_cached_key(|path| {
         // Use a default size of 0 if there's an error calculating the folder size

@@ -5,12 +5,10 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
-// **1 = B
-// **2 = KB
-// **3 = MB
+#[doc(hidden)]
 const MAX_BYTES_PER_FILE: usize = 100 * 1024_usize.pow(2);
 
-/// Enum for serialization
+/// Struct for writing to a JSONL file
 #[derive(Serialize, Clone, Default)]
 pub struct ThreadPost {
     pub length: usize,
@@ -18,15 +16,18 @@ pub struct ThreadPost {
     pub thread_id: String,
     pub source: String,
 }
-
+#[doc(hidden)]
 fn get_chunk_size(bytes: usize, data: &[ThreadPost]) -> usize {
     let num_files = bytes.div_ceil(MAX_BYTES_PER_FILE);
     let num_splits = num_files.max(1);
     data.len().div_ceil(num_splits)
 }
-
+#[doc(hidden)]
+#[allow(dead_code)]
 /// Writes a vector of ThreadPost to a JSONL file
-pub fn _write_jsonl(
+/// 
+/// Legacy code kept for reference
+fn _write_jsonl(
     data: Vec<ThreadPost>,
     bytes: usize,
     file_path: PathBuf,
@@ -67,8 +68,9 @@ pub fn _write_jsonl(
         Ok(())
     }
 }
-
-pub fn write_jsonl(data: Vec<String>, _bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
+#[doc(hidden)]
+#[allow(dead_code)]
+fn write_jsonl(data: Vec<String>, _bytes: usize, file_path: PathBuf) -> std::io::Result<()> {
     let folder = file_path.parent().unwrap().to_str().unwrap();
     let stem = file_path.file_stem().unwrap().to_str().unwrap();
     let extension = file_path.extension().unwrap().to_str().unwrap();
@@ -86,7 +88,31 @@ pub fn write_jsonl(data: Vec<String>, _bytes: usize, file_path: PathBuf) -> std:
     handle.join().unwrap();
     Ok(())
 }
-
+/// # JSONL Handler
+/// 
+/// Takes a receiver and writes the data to a JSONL file. The receiver should be a string format.
+/// 
+/// # Arguments
+/// 
+/// * `receiver` - `Receiver<String>` - The receiver channel that receives the data
+/// * `output_folder` - `PathBuf` - The output folder where the JSONL file will be written. 
+/// Right now the output is hardcoded to `all.jsonl`
+/// 
+/// 
+/// # Example
+/// 
+/// ```
+/// let (tx, rx) = bounded(1000); // This can be unbounded
+/// let write_handle = std::thread::spawn(move || {
+///    write_jsonl_receiver(rx, output_folder)
+/// });
+/// 
+/// tx.send(String::from("Hello")).unwrap();
+/// tx.send(String::from("World")).unwrap();
+/// 
+/// drop(tx);
+/// write_handle.join().unwrap().unwrap();
+/// ```
 pub fn write_jsonl_receiver(
     receiver: Receiver<String>,
     output_folder: PathBuf,
@@ -106,6 +132,8 @@ pub fn write_jsonl_receiver(
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+    use crossbeam_channel::bounded;
+    use tempfile::TempDir;
     #[test]
     fn test_get_chunk_size() {
         let post = ThreadPost::default();
@@ -116,5 +144,29 @@ mod tests {
         let chunk_size = super::get_chunk_size(bytes, &data);
         // 1000 / 3 ceil = 334
         assert_eq!(chunk_size, 334);
+    }
+
+    #[test]
+    fn test_receiver() {
+
+        let temp_dir = TempDir::new().unwrap();
+        let output_folder = temp_dir.path().to_path_buf();
+        let output_folder_clone = output_folder.clone();
+        let (tx, rx) = bounded(1000);
+        let write_handle = std::thread::spawn(move || {
+            write_jsonl_receiver(rx, output_folder_clone)
+        });
+
+        tx.send(String::from("Hello")).unwrap();
+        tx.send(String::from("World")).unwrap();
+        drop(tx);
+
+        write_handle.join().unwrap().unwrap();
+
+        let output_path = output_folder.join("all.jsonl");
+        let contents = std::fs::read_to_string(output_path).unwrap();
+
+        assert_eq!(contents, "Hello\nWorld\n");
+
     }
 }

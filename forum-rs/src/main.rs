@@ -64,10 +64,10 @@ static TOTAL_TIME_WRITE_JSONL: AtomicU64 = AtomicU64::new(0);
 /// # Arguments
 ///
 /// * `folder` - `&Path` - The folder containing list of `jsonl` files
-/// * `out_folder` - `&String` - The output folder where the processed data will be stored
 /// * `use_sentencepiece` - `&bool` - Whether to use sentencepiece for tokenization, the name does not mean that it
 ///     will use sentencepiece, it will use the tokenizer specified in the `tokenizer` argument.
 /// * `source` - `&String` - The source of the data. This is just for labelling.
+/// * `post_tx` - `Sender<String>` - The sender to send the String objects.
 ///
 /// # Example
 ///
@@ -75,17 +75,17 @@ static TOTAL_TIME_WRITE_JSONL: AtomicU64 = AtomicU64::new(0);
 /// use std::path::Path;
 ///
 /// let folder = Path::new("main_folder/sub1/");
-/// let out_folder = "./output/";
 /// let use_sentencepiece = true;
 /// let source = "reddit".to_string();
-/// process_folder(folder, &out_folder, &use_sentencepiece, &source);
+/// let (data_tx, data_rx) = unbounded();
+/// process_folder(folder, &use_sentencepiece, &source, data_tx.clone());
 ///
 /// ```
 fn process_folder(
     folder: &Path,
     use_sentencepiece: &bool,
     source: &String,
-    post_rx: Sender<String>,
+    post_tx: Sender<String>,
 ) {
     // dbg!(&folder);
     let folder = folder.to_str().unwrap();
@@ -96,7 +96,7 @@ fn process_folder(
     TOTAL_TIME_GET_THREADS.fetch_add(get_threads_time, Ordering::SeqCst);
 
     let start = Instant::now();
-    forum_thread::sender_thread_posts(threads, *use_sentencepiece, source.to_string(), post_rx);
+    forum_thread::sender_thread_posts(threads, *use_sentencepiece, source.to_string(), post_tx);
     let create_posts_time = start.elapsed().as_secs();
     TOTAL_TIME_CREATE_POSTS.fetch_add(create_posts_time, Ordering::SeqCst);
 
